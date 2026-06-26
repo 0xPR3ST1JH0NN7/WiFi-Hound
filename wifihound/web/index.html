@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>WiFi-Hound</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="/static/vendor/cytoscape.min.js"></script>
+  <script src="/static/vendor/layout-base.js"></script>
+  <script src="/static/vendor/cose-base.js"></script>
+  <script src="/static/vendor/cytoscape-fcose.js"></script>
+  <script src="/static/vendor/cytoscape-cxtmenu.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/static/img/logo.svg" alt="WiFi-Hound" class="logo"/>
+      <span class="brand-name">WiFi&#8209;Hound</span>
+    </div>
+    <div class="search">
+      <input id="search-input" type="search" placeholder="Search ESSID, BSSID, MAC, vendor…" autocomplete="off"/>
+      <ul id="search-results" class="search-results hidden"></ul>
+    </div>
+    <div class="topbar-actions">
+      <label class="btn primary" for="file-input">Import capture</label>
+      <input id="file-input" type="file" accept=".csv,.txt" hidden/>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Overview</h2>
+        <div id="stats" class="stats">
+          <div class="stat"><span class="stat-num" id="stat-aps">0</span><span class="stat-label">Access Points</span></div>
+          <div class="stat"><span class="stat-num" id="stat-clients">0</span><span class="stat-label">Clients</span></div>
+          <div class="stat"><span class="stat-num" id="stat-assoc">0</span><span class="stat-label">Associated</span></div>
+          <div class="stat"><span class="stat-num" id="stat-hidden">0</span><span class="stat-label">Hidden APs</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Filters</h2>
+        <label class="filter"><input type="checkbox" id="filter-aps" checked/> Access Points</label>
+        <label class="filter"><input type="checkbox" id="filter-clients" checked/> Clients</label>
+        <label class="filter"><input type="checkbox" id="filter-unassoc" checked/> Unassociated clients</label>
+        <label class="filter-row">Encryption
+          <select id="filter-enc"><option value="">all</option></select>
+        </label>
+        <label class="filter-row">Channel
+          <select id="filter-chan"><option value="">all</option></select>
+        </label>
+        <label class="filter-row">Layout
+          <select id="layout-select">
+            <option value="fcose">force (fcose)</option>
+            <option value="concentric">concentric</option>
+            <option value="breadthfirst">hierarchical</option>
+            <option value="circle">circle</option>
+            <option value="grid">grid</option>
+          </select>
+        </label>
+        <button class="btn" id="enrich-btn">Enrich vendors (OUI)</button>
+        <button class="btn ghost" id="reset-btn">Reset view</button>
+      </section>
+
+      <section class="panel">
+        <h2>Legend</h2>
+        <div class="legend"><span class="dot ap"></span> Access Point</div>
+        <div class="legend"><span class="dot client"></span> Client</div>
+        <div class="legend"><span class="dot client-un"></span> Unassociated client</div>
+        <p class="hint">Right-click a node for actions. Drag to pan, scroll to zoom.</p>
+      </section>
+    </aside>
+
+    <section class="graph-wrap">
+      <div id="cy"></div>
+      <div id="empty-state" class="empty-state">
+        <img src="/static/img/logo.svg" alt="" class="empty-logo"/>
+        <h3>No capture loaded</h3>
+        <p>Import an airodump&#8209;ng CSV to map the Wi&#8209;Fi landscape.</p>
+        <label class="btn primary" for="file-input">Import capture</label>
+      </div>
+    </section>
+
+    <aside id="details" class="details hidden">
+      <button class="details-close" id="details-close" aria-label="Close">&times;</button>
+      <div id="details-body"></div>
+    </aside>
+  </main>
+
+  <!-- Offensive operation modal (only used when the server enables it) -->
+  <div id="op-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="op-title">Operation</h3>
+      <div id="op-body"></div>
+      <div class="op-warn">
+        Authorized testing only. Use exclusively on networks you own or are
+        explicitly permitted to assess.
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="op-cancel">Cancel</button>
+        <button class="btn danger" id="op-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

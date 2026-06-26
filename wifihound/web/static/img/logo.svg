@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="WiFi-Hound logo">
+  <defs>
+    <linearGradient id="wh-accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <radialGradient id="wh-bg" cx="0.5" cy="0.42" r="0.65">
+      <stop offset="0" stop-color="#13212b"/>
+      <stop offset="1" stop-color="#0a1016"/>
+    </radialGradient>
+    <filter id="wh-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- radar badge -->
+  <circle cx="128" cy="128" r="120" fill="url(#wh-bg)" stroke="url(#wh-accent)" stroke-width="4"/>
+  <circle cx="128" cy="128" r="104" fill="none" stroke="#1f3b44" stroke-width="1.5" stroke-dasharray="3 7"/>
+  <path d="M128 128 L128 24 A104 104 0 0 1 214 80 Z" fill="url(#wh-accent)" opacity="0.06"/>
+
+  <!-- Wi-Fi signal arcs broadcast forward from the snout -->
+  <g fill="none" stroke="url(#wh-accent)" stroke-linecap="round" filter="url(#wh-glow)">
+    <path d="M168 104 a36 36 0 0 1 0 56" stroke-width="7" opacity="0.95"/>
+    <path d="M184 88 a60 60 0 0 1 0 88" stroke-width="7" opacity="0.58"/>
+    <path d="M200 72 a84 84 0 0 1 0 120" stroke-width="7" opacity="0.3"/>
+  </g>
+
+  <!-- hound head in profile, snout pointing right toward the signal -->
+  <g filter="url(#wh-glow)">
+    <path fill="url(#wh-accent)" d="
+      M156 138
+      C 150 122, 142 110, 128 105
+      C 122 92, 114 82, 102 81
+      C 92 80, 84 86, 82 97
+      C 70 102, 61 122, 63 148
+      C 65 171, 77 186, 90 180
+      C 93 176, 93 163, 96 153
+      C 101 169, 113 180, 127 176
+      C 141 172, 150 159, 154 149
+      Z"/>
+    <!-- ear shading: the signature droop -->
+    <path fill="#0a1016" opacity="0.22" d="
+      M82 99 C 70 105, 62 124, 64 148 C 66 169, 77 183, 90 178
+      C 84 161, 82 130, 89 106 C 88 101, 85 98, 82 99 Z"/>
+    <!-- nose -->
+    <circle cx="150" cy="137" r="6.5" fill="#0a1016"/>
+    <!-- eye (negative space) -->
+    <circle cx="112" cy="107" r="6.5" fill="#0a1016"/>
+  </g>
+</svg>

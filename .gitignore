@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tests / tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local data / captures (do not commit real scans)
+*.cap
+*.pcap
+*.kismet
+*.netxml
+captures/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

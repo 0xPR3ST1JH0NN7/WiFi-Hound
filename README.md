@@ -3,7 +3,7 @@
 
   # WiFi-Hound
 
-  **BloodHound-style interactive graph analysis for Wi-Fi reconnaissance data.**
+  **Interactive graph analysis for Wi-Fi reconnaissance data.**
 
   Turn an `airodump-ng` capture into a live, explorable map of access points,
   clients and their associations — then search, filter and pivot through it in
@@ -14,9 +14,8 @@
 
 ## What it does
 
-WiFi-Hound ingests Wi-Fi scan data and renders it as an interactive node graph,
-the same way BloodHound maps Active Directory. Instead of staring at CSV rows,
-you get a topology you can **explore**:
+WiFi-Hound ingests Wi-Fi scan data and renders it as an interactive node graph.
+Instead of staring at CSV rows, you get a topology you can **explore**:
 
 - **Access Points** (red) and **Clients** (blue) as nodes, associations as edges.
 - **Search** by ESSID, BSSID, MAC or vendor and jump straight to the node.

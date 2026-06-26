@@ -39,7 +39,7 @@ def _serve(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="wifihound",
-        description="BloodHound-style interactive graph analysis for Wi-Fi recon data.",
+        description="Interactive graph analysis for Wi-Fi recon data.",
     )
     parser.add_argument("--version", action="version",
                         version=f"WiFi-Hound {__version__}")

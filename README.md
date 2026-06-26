@@ -21,8 +21,8 @@ live capture and watch the network map build in real time.
 ## Install
 
 ```bash
-git clone https://github.com/0xPR3ST1JH0NN7/WiFi-Hound
-cd WiFi-Hound
+git clone https://github.com/0xPR3ST1JH0NN7/WiFiHound
+cd WiFiHound
 pip install -r requirements.txt
 ```
 

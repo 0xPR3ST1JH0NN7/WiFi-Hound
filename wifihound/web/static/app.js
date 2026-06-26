@@ -694,7 +694,7 @@ function escapeHtml(value) {
 (async function init() {
   try {
     const cfg = await API.config();
-    OFFENSIVE = !!cfg.offensive_enabled;
+    OFFENSIVE = !!cfg.offensive_available;
   } catch (e) {
     /* default OFFENSIVE = false */
   }

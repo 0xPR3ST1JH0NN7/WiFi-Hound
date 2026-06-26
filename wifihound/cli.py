@@ -1,4 +1,13 @@
-"""Command-line entry point: ``python -m wifihound serve``."""
+"""Command-line entry point.
+
+There is a single way to run WiFiHound:
+
+    python -m wifihound            # or: python -m wifihound serve
+    sudo python -m wifihound       # unlocks live radio capture + deauth
+
+Offensive / live-radio features are enabled automatically when the process runs
+as root, so just use ``sudo`` when you need them. No special flags.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +16,7 @@ import sys
 import webbrowser
 
 from wifihound import __version__
-from wifihound.operations.base import set_offensive_enabled
+from wifihound.operations.base import offensive_available
 
 
 def _serve(args: argparse.Namespace) -> int:
@@ -18,9 +27,12 @@ def _serve(args: argparse.Namespace) -> int:
               file=sys.stderr)
         return 1
 
-    set_offensive_enabled(args.enable_offensive)
-    if args.enable_offensive:
-        print("[!] OFFENSIVE OPERATIONS ENABLED. Use only on authorized networks.")
+    if offensive_available():
+        print("[*] Running as root: live radio capture and deauth are available.")
+        print("    Use only on networks you own or are authorized to test.")
+    else:
+        print("[*] Running unprivileged: offline analysis and replay only.")
+        print("    Start with sudo to enable live radio capture and deauth.")
 
     url = f"http://{args.host}:{args.port}"
     print(f"[*] WiFiHound v{__version__} -> {url}")
@@ -43,27 +55,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version",
                         version=f"WiFiHound {__version__}")
-    sub = parser.add_subparsers(dest="command")
+    # Plain serve flags; live radio / deauth are unlocked by running as root.
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--no-browser", action="store_true",
+                        help="Do not auto-open the browser.")
+    parser.add_argument("--reload", action="store_true",
+                        help="Auto-reload on code changes (development).")
 
-    serve = sub.add_parser("serve", help="Start the local web app.")
+    sub = parser.add_subparsers(dest="command")
+    serve = sub.add_parser("serve", help="Start the local web app (default).")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
-    serve.add_argument("--no-browser", action="store_true",
-                       help="Do not auto-open the browser.")
-    serve.add_argument("--reload", action="store_true",
-                       help="Auto-reload on code changes (development).")
-    serve.add_argument("--enable-offensive", action="store_true",
-                       help="Enable offensive operations (authorized testing only).")
+    serve.add_argument("--no-browser", action="store_true")
+    serve.add_argument("--reload", action="store_true")
     serve.set_defaults(func=_serve)
+
+    parser.set_defaults(func=_serve)  # serve is the default action
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not getattr(args, "command", None):
-        parser.print_help()
-        return 1
     return args.func(args)
 
 

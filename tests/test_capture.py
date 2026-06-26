@@ -150,7 +150,9 @@ def test_replay_interval_is_clamped():
         c.post("/api/live/stop")
 
 
-def test_airodump_blocked_when_disabled():
+def test_airodump_blocked_without_root(monkeypatch):
+    import wifihound.operations.base as base
+    monkeypatch.setattr(base, "_is_root", lambda: False)
     c = client()
     res = c.post("/api/live/start",
                  json={"mode": "airodump", "interface": "wlan0mon", "acknowledged": True})

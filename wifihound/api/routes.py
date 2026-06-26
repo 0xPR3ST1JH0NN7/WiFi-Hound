@@ -21,7 +21,7 @@ from wifihound.capture import (
 )
 from wifihound.enrichment import oui
 from wifihound.graph import WifiGraph
-from wifihound.operations import OperationError, deauth as deauth_op, offensive_enabled
+from wifihound.operations import OperationError, deauth as deauth_op, offensive_available
 from wifihound.operations.base import OperationError as _OpError, require_authorization, require_tools
 
 router = APIRouter(prefix="/api")
@@ -93,7 +93,8 @@ def path(source: str, target: str):
 
 @router.get("/config")
 def config():
-    return {"offensive_enabled": offensive_enabled()}
+    # Offensive / live-radio features are unlocked by running as root (sudo).
+    return {"offensive_available": offensive_available()}
 
 
 # ------------------------------------------------------------------ enrichment

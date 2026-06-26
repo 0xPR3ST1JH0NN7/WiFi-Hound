@@ -70,14 +70,16 @@ def test_unsupported_format():
     assert res.status_code == 415
 
 
-def test_deauth_blocked_when_disabled():
+def test_deauth_blocked_without_root(monkeypatch):
+    import wifihound.operations.base as base
+    monkeypatch.setattr(base, "_is_root", lambda: False)
     c = client()
     import_sample(c)
     res = c.post(
         "/api/operations/deauth",
         json={"bssid": "DC:A6:32:11:22:33", "acknowledged": True},
     )
-    # Offensive ops are off by default -> forbidden
+    # Without root, offensive ops are unavailable -> forbidden
     assert res.status_code == 403
 
 

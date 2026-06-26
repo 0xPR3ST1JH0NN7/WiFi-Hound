@@ -3,8 +3,8 @@
 These operations interact with *real* radio hardware and other people's
 networks. They are therefore:
 
-  * disabled unless the server is started with ``--enable-offensive`` (or the
-    ``WIFIHOUND_OFFENSIVE=1`` env var) **and** the process runs as root;
+  * available only when the process runs as **root** (start WiFiHound with
+    ``sudo``); there is no separate flag to toggle;
   * gated behind an explicit per-request authorization acknowledgement;
   * dependency-checked (the required external tools must exist);
   * logged.
@@ -28,32 +28,24 @@ class OperationError(RuntimeError):
 
 
 class OperationNotAuthorized(OperationError):
-    """Raised when the offensive subsystem or per-request gate blocks a call."""
-
-
-def offensive_enabled() -> bool:
-    """Whether the offensive subsystem is switched on for this process."""
-    return os.environ.get("WIFIHOUND_OFFENSIVE") == "1"
-
-
-def set_offensive_enabled(enabled: bool) -> None:
-    os.environ["WIFIHOUND_OFFENSIVE"] = "1" if enabled else "0"
+    """Raised when the per-request gate or privilege check blocks a call."""
 
 
 def _is_root() -> bool:
     return hasattr(os, "geteuid") and os.geteuid() == 0
 
 
+def offensive_available() -> bool:
+    """Offensive / live-radio features are available only when running as root."""
+    return _is_root()
+
+
 def require_authorization(acknowledged: bool) -> None:
     """Enforce every guardrail before an offensive operation may run."""
-    if not offensive_enabled():
-        raise OperationNotAuthorized(
-            "Offensive operations are disabled. Restart the server with "
-            "--enable-offensive (authorized testing only)."
-        )
     if not _is_root():
         raise OperationNotAuthorized(
-            "Offensive operations require root privileges (radio access)."
+            "This action needs root privileges (radio access). "
+            "Start WiFiHound with sudo."
         )
     if not acknowledged:
         raise OperationNotAuthorized(

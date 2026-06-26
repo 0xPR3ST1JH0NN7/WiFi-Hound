@@ -29,8 +29,13 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python -m wifihound serve            # opens http://127.0.0.1:8000
+python -m wifihound                  # opens http://127.0.0.1:8000
+sudo python -m wifihound             # also unlocks live radio capture + deauth
 ```
+
+There is one way to run it. Offline analysis and replay work unprivileged;
+live radio capture and deauth turn on automatically when you start it with
+**sudo** (root). No special flags.
 
 Click **Import capture** and pick an `airodump-ng` CSV
 (`airodump-ng -w scan --output-format csv wlan0mon`).
@@ -40,9 +45,8 @@ Click **Import capture** and pick an `airodump-ng` CSV
 - **Replay**: import a CSV, then *Start live* to reveal it node by node. No privileges needed.
 - **airodump**: stream a real capture. Choose interface, channel, protocol
   (WEP / WPA2 / WPA3 / Open), WPS, and an optional ESSID or BSSID filter.
-  Requires `--enable-offensive`, root, and a monitor mode interface. WPA
-  handshakes captured during the session (e.g. from a deauth) are flagged on
-  the AP with a 🔑.
+  Needs root (run with sudo) and a monitor mode interface. WPA handshakes
+  captured during the session (e.g. from a deauth) are flagged on the AP with a 🔑.
 
 The reveal / poll speed is set by the *Interval* field.
 
@@ -51,8 +55,8 @@ The reveal / poll speed is set by the *Interval* field.
 Deauthentication runs `aireplay-ng -0 <count> -a <AP> [-c <client>]` on the live
 capture interface. It is **only available while an airodump capture is running on
 a fixed channel** (aireplay can reach the AP only on the interface's channel),
-and stays behind the same guardrails: enabled with `--enable-offensive`, run as
-root, confirmed per action, with capped bursts and logging.
+and stays behind its guardrails: requires root (run with sudo), confirmed per
+action, with capped bursts and logging.
 
 > ⚠️ Use only on networks you own or are explicitly authorized to test.
 > Unauthorized deauthentication is illegal in most jurisdictions.

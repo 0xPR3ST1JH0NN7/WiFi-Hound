@@ -3,13 +3,11 @@
 from wifihound.operations.base import (  # noqa: F401
     OperationError,
     OperationNotAuthorized,
-    offensive_enabled,
-    set_offensive_enabled,
+    offensive_available,
 )
 
 __all__ = [
     "OperationError",
     "OperationNotAuthorized",
-    "offensive_enabled",
-    "set_offensive_enabled",
+    "offensive_available",
 ]

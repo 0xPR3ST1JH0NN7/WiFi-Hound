@@ -26,6 +26,8 @@ Instead of staring at CSV rows, you get a topology you can **explore**:
   copy identifier).
 - **Vendor enrichment** from the OUI (offline, no setup required).
 - Multiple **layouts** (force, hierarchical, concentric, circle, grid).
+- **Live capture**: watch the graph build in real time, either by replaying a
+  loaded CSV or by streaming a real airodump-ng capture over WebSocket.
 
 It is built around a small **web app** (a local FastAPI server plus a Cytoscape.js
 frontend with no build step) because real interactivity, namely clicking,
@@ -42,7 +44,8 @@ wifihound/
 ├── parsers/            # pluggable capture parsers (airodump CSV today)
 ├── enrichment/         # OUI vendor lookup + geo hook
 ├── operations/         # offensive ops (guardrailed, opt in)
-├── api/routes.py       # REST API
+├── capture/            # live capture: sources + controller (replay / airodump)
+├── api/routes.py       # REST API + live WebSocket
 └── web/                # index.html + Cytoscape.js UI (vendored, offline)
 ```
 
@@ -93,6 +96,24 @@ Wireshark style `manuf` / IEEE OUI file:
 ```bash
 WIFIHOUND_OUI_FILE=/usr/share/wireshark/manuf python -m wifihound serve
 ```
+
+## Live capture
+
+WiFiHound works both ways: analyze a capture after the fact, or watch the graph
+build in real time. Open the **Live capture** panel in the sidebar:
+
+- **Replay** (no privileges): import a CSV, then **Start live** to watch that
+  same capture reveal itself node by node. Great for demos and for reviewing how
+  a network populated. Works on any machine, no hardware needed.
+- **airodump (live radio)**: stream a real `airodump-ng` capture. The backend
+  spawns airodump-ng, tails its rotating CSV, and pushes incremental graph
+  updates to the browser over a WebSocket. This touches radio hardware, so it
+  carries the **same guardrails as the offensive operations**: start the server
+  with `--enable-offensive`, run as **root**, and provide a monitor-mode
+  interface.
+
+Offline import stays the default and needs no privileges; live capture is an
+opt-in layer on top.
 
 ## Offensive operations (authorized testing only)
 

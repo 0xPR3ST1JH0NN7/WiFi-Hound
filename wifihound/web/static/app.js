@@ -18,6 +18,13 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
+  liveStart: (payload) =>
+    fetchJSON("/api/live/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  liveStop: () => fetchJSON("/api/live/stop", { method: "POST" }),
 };
 
 async function fetchJSON(url, opts) {
@@ -84,6 +91,11 @@ const cy = cytoscape({
     {
       selector: ".highlight",
       style: { "border-color": "#34d399", "border-width": 4, "line-color": "#34d399" },
+    },
+    {
+      selector: "node.fresh",
+      style: { "border-color": "#fbbf24", "border-width": 5,
+               "border-opacity": 1, "background-blacken": -0.1 },
     },
     { selector: ".hidden-node", style: { display: "none" } },
     {
@@ -447,6 +459,7 @@ cy.on("tap", (evt) => {
 document.getElementById("file-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  if (live.running) await stopLive();   // offline import replaces any live session
   try {
     toast("Parsing capture…");
     const payload = await API.import(file);
@@ -485,6 +498,122 @@ document.getElementById("layout-select").onchange = (e) => runLayout(e.target.va
   (id) => document.getElementById(id).addEventListener("change", applyFilters)
 );
 
+/* ------------------------------------------------------------- live capture */
+const live = { ws: null, running: false, fitDone: false, layoutTimer: null };
+
+// Clients with no edges are "unassociated"; recompute after live changes.
+function recomputeUnassoc() {
+  cy.nodes('[kind = "client"]').forEach((n) => {
+    n.data("unassociated", n.degree(false) === 0);
+  });
+}
+
+function setLiveUI(running) {
+  live.running = running;
+  document.getElementById("live-toggle").textContent = running ? "Stop live" : "Start live";
+  document.getElementById("live-toggle").classList.toggle("danger", running);
+  document.getElementById("live-dot").classList.toggle("on", running);
+}
+
+function applyPatch(p) {
+  cy.batch(() => {
+    (p.remove || []).forEach((id) => cy.remove(cy.getElementById(id)));
+    (p.add || []).forEach((el) => {
+      const added = cy.add(el);
+      if (el.group === "nodes") added.addClass("fresh");
+    });
+    (p.update || []).forEach((data) => {
+      const ele = cy.getElementById(data.id);
+      if (ele.nonempty()) ele.data(data);
+    });
+  });
+  recomputeUnassoc();
+  applyFilters();
+  if (p.summary) updateStats(p.summary);
+  document.getElementById("empty-state").classList.toggle("hidden", cy.nodes().length > 0);
+  setTimeout(() => cy.nodes(".fresh").removeClass("fresh"), 1600);
+  scheduleLiveLayout();
+}
+
+function scheduleLiveLayout() {
+  clearTimeout(live.layoutTimer);
+  live.layoutTimer = setTimeout(() => {
+    const l = cy.layout({
+      name: "fcose", animate: true, animationDuration: 500, randomize: false,
+      packComponents: true, nodeRepulsion: 16000, idealEdgeLength: 130,
+      nodeSeparation: 150, gravity: 0.15, gravityRange: 3.8, fit: false, padding: 60,
+    });
+    // Fit once, after the first real layout, then leave the view to the user.
+    l.one("layoutstop", () => {
+      if (!live.fitDone) { fitGraph(); live.fitDone = true; }
+    });
+    l.run();
+  }, 700);
+}
+
+function handleLiveMessage(msg) {
+  if (msg.type === "init") {
+    cy.elements().remove();
+    if (msg.elements && (msg.elements.nodes.length || msg.elements.edges.length)) {
+      renderGraph(msg);
+      live.fitDone = true;
+    } else {
+      document.getElementById("empty-state").classList.add("hidden");
+    }
+  } else if (msg.type === "patch") {
+    applyPatch(msg);
+  } else if (msg.type === "stopped") {
+    setLiveUI(false);
+  }
+}
+
+function openLiveSocket() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/api/live/ws`);
+  live.ws = ws;
+  ws.onmessage = (ev) => {
+    try { handleLiveMessage(JSON.parse(ev.data)); } catch (e) { /* ignore */ }
+  };
+  ws.onclose = () => { live.ws = null; };
+}
+
+async function startLive() {
+  const mode = document.getElementById("live-mode").value;
+  const payload = { mode, interval: 1.2 };
+  if (mode === "airodump") {
+    const iface = document.getElementById("live-iface").value.trim();
+    if (!iface) return toast("Enter a monitor-mode interface", "error");
+    if (!confirm("Start a real radio capture on " + iface +
+                 "?\nAuthorized testing only — networks you own or may assess.")) return;
+    payload.interface = iface;
+    payload.acknowledged = true;
+  }
+  try {
+    live.fitDone = false;
+    await API.liveStart(payload);
+    openLiveSocket();
+    setLiveUI(true);
+    toast(`Live capture started (${mode})`, "ok");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+async function stopLive() {
+  try { await API.liveStop(); } catch (e) { /* ignore */ }
+  if (live.ws) { live.ws.close(); live.ws = null; }
+  setLiveUI(false);
+  toast("Live capture stopped", "ok");
+}
+
+document.getElementById("live-toggle").onclick = () =>
+  live.running ? stopLive() : startLive();
+
+document.getElementById("live-mode").onchange = (e) => {
+  document.getElementById("live-iface-row").style.display =
+    e.target.value === "airodump" ? "" : "none";
+};
+
 /* ------------------------------------------------------------------ utils */
 function copyText(text) {
   navigator.clipboard?.writeText(text).then(
@@ -515,6 +644,11 @@ function escapeHtml(value) {
     OFFENSIVE = !!cfg.offensive_enabled;
   } catch (e) {
     /* default OFFENSIVE = false */
+  }
+  if (OFFENSIVE) {
+    // Real radio capture is unlocked only when the server enables offensive ops.
+    const opt = document.querySelector('#live-mode option[value="airodump"]');
+    if (opt) opt.disabled = false;
   }
   try {
     const payload = await API.graph();

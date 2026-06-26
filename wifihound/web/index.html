@@ -65,6 +65,22 @@
       </section>
 
       <section class="panel">
+        <h2>Live capture <span id="live-dot" class="live-dot"></span></h2>
+        <label class="filter-row">Mode
+          <select id="live-mode">
+            <option value="replay">replay loaded CSV</option>
+            <option value="airodump" disabled>airodump (live radio)</option>
+          </select>
+        </label>
+        <label class="filter-row" id="live-iface-row" style="display:none">Interface
+          <input id="live-iface" class="mini-input" placeholder="wlan0mon"/>
+        </label>
+        <button class="btn primary" id="live-toggle">Start live</button>
+        <p class="hint" id="live-status">Replay reveals the loaded capture as if it were
+          discovered live. Real radio capture needs <code>--enable-offensive</code>.</p>
+      </section>
+
+      <section class="panel">
         <h2>Legend</h2>
         <div class="legend"><span class="dot ap"></span> Access Point</div>
         <div class="legend"><span class="dot client"></span> Client</div>

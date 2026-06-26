@@ -2,18 +2,30 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    File,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from pydantic import BaseModel
 
 from wifihound import parsers
+from wifihound.capture import AirodumpSource, CaptureController, ReplaySource
 from wifihound.enrichment import oui
 from wifihound.graph import WifiGraph
 from wifihound.operations import OperationError, deauth as deauth_op, offensive_enabled
+from wifihound.operations.base import OperationError as _OpError, require_authorization, require_tools
 
 router = APIRouter(prefix="/api")
 
 # Single in-memory graph for the running session.
 STATE = WifiGraph()
+
+# Single live-capture controller for the running session.
+CAPTURE = CaptureController()
 
 
 # --------------------------------------------------------------------- import
@@ -112,3 +124,66 @@ def operations_deauth(req: DeauthRequest):
         )
     except OperationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+# ----------------------------------------------------------------- live capture
+class LiveStartRequest(BaseModel):
+    mode: str = "replay"            # "replay" | "airodump"
+    interface: str | None = None
+    channel: str | None = None
+    interval: float | None = None
+    acknowledged: bool = False
+
+
+@router.post("/live/start")
+async def live_start(req: LiveStartRequest):
+    if req.mode == "replay":
+        # Re-feed the currently loaded capture as if it were being discovered.
+        if STATE.scan is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Load a capture first, then replay it live.",
+            )
+        source = ReplaySource(STATE.scan)
+    elif req.mode == "airodump":
+        # Real radio capture: same guardrails as the offensive subsystem.
+        try:
+            require_authorization(req.acknowledged)
+            require_tools("airodump-ng")
+        except _OpError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        if not req.interface:
+            raise HTTPException(status_code=400,
+                                detail="A monitor-mode interface is required.")
+        source = AirodumpSource(req.interface, req.channel)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown mode '{req.mode}'.")
+
+    await CAPTURE.start(source, mode=req.mode, interval=req.interval or 1.5)
+    return {"status": "running", "mode": req.mode}
+
+
+@router.post("/live/stop")
+async def live_stop():
+    await CAPTURE.stop()
+    return {"status": "stopped"}
+
+
+@router.get("/live/status")
+def live_status():
+    return CAPTURE.status()
+
+
+@router.websocket("/live/ws")
+async def live_ws(ws: WebSocket):
+    await ws.accept()
+    queue = CAPTURE.subscribe()
+    try:
+        await ws.send_json(CAPTURE.snapshot())  # initial full graph
+        while True:
+            message = await queue.get()
+            await ws.send_json(message)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        CAPTURE.unsubscribe(queue)

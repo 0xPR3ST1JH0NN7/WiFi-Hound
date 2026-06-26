@@ -8,9 +8,10 @@
 
 ---
 
-WiFiHound turns `airodump-ng` data into an explorable graph of access points,
-clients and their associations. Import a CSV to analyze a past scan, or run a
-live capture and watch the network map build in real time.
+WiFiHound builds on the `aircrack-ng` suite (`airodump-ng`, `aireplay-ng`) and
+turns it into an explorable graph of access points, clients and their
+associations, with live capture on top. Import a CSV to analyze a past scan, or
+run a live capture and watch the network map build in real time, deauth included.
 
 - **Graph UI**: APs (red) and clients (blue) as nodes, associations as edges.
 - **Explore**: search, filter (type, encryption, channel), node details, context actions.

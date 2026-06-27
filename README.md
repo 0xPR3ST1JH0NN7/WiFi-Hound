@@ -10,13 +10,13 @@
 
 WiFiHound builds on the `aircrack-ng` suite and turns it into an explorable graph
 of access points, clients and their associations, with live capture on top.
-Import a CSV to analyze a past scan, or run a live capture and watch the network
-map build in real time, deauth included.
+Import a CSV to analyze a past scan — and **replay** it node by node — or run a
+live capture and watch the network map build in real time, deauth included.
 
 - **Graph UI**: APs (red) and clients (blue) as nodes, associations as edges.
 - **Explore**: search, filter (type, encryption, channel), node details, context actions.
 - **Vendor enrichment** from the OUI, fully offline.
-- **Live capture**: stream a real `airodump-ng` capture over WebSocket and watch the map build in real time.
+- **Two ways to watch the map build**: **Replay** an imported capture node by node (offline, no radio), or **Live capture** a real `airodump-ng` stream over WebSocket.
 - **Offensive** (opt in): deauth an AP or a single client during a live capture.
 
 ## Install
@@ -58,10 +58,22 @@ capture and deauth turn on automatically when you start it with **sudo**
 (root). No special flags.
 
 Click **Import capture** and pick an `airodump-ng` CSV
-(`airodump-ng -w scan --output-format csv wlan0mon`) to map a past scan offline.
+(`airodump-ng -w scan --output-format csv wlan0mon`). From there the network map
+builds **two ways**:
 
-**Live capture** (sidebar, *Live capture* panel) streams a real `airodump-ng`
-capture and maps the network as it appears. It needs root (run with `sudo`):
+### Offline + Replay — no privileges
+
+Importing a capture immediately gives you the **full graph** of a past scan to
+explore. Then, in the sidebar **Replay** panel, hit **Replay capture** to watch
+that same scan **rebuild itself node by node**, as if it were being discovered
+live. It is a pure visualization of data you already have — no radio, no root —
+so it works anywhere, and it is great for reviewing an old capture or presenting
+one. The reveal speed is the *Interval* field.
+
+### Live capture — real radio (needs sudo)
+
+The sidebar **Live capture** panel streams a real `airodump-ng` capture and maps
+the network as it appears. It needs root (run with `sudo`):
 
 - Pick a **wireless interface** from the auto-detected list (the panel reads the
   adapters present on the host; hit ↻ to rescan). A managed interface is put
@@ -73,7 +85,7 @@ capture and maps the network as it appears. It needs root (run with `sudo`):
 - WPA handshakes captured during the session (e.g. from a deauth) are flagged on
   the AP with a 🔑.
 
-The poll speed is set by the *Interval* field.
+The poll speed is the *Interval* field.
 
 ## Offensive operations
 

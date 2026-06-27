@@ -489,6 +489,8 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
     toast("Parsing capture…");
     const payload = await API.import(file);
     renderGraph(payload);
+    live.loaded = true;            // a capture is now available to replay
+    refreshLiveButtons();
     toast(`Loaded ${payload.summary.access_points} APs / ${payload.summary.clients} clients`, "ok");
   } catch (err) {
     toast(err.message, "error");
@@ -525,7 +527,7 @@ document.getElementById("layout-select").onchange = (e) => runLayout(e.target.va
 
 /* ------------------------------------------------------------- live capture */
 const live = { ws: null, running: false, fitDone: false, layoutTimer: null,
-               mode: null, channel: null, canDeauth: false };
+               mode: null, channel: null, canDeauth: false, loaded: false };
 
 // Clients with no edges are "unassociated"; recompute after live changes.
 function recomputeUnassoc() {
@@ -534,11 +536,33 @@ function recomputeUnassoc() {
   });
 }
 
+// Two ways to drive the live graph share one capture session: airodump (real
+// radio, needs root) and replay (offline reveal of an imported capture). Only
+// one runs at a time; reflect that on both panels' buttons.
+function refreshLiveButtons() {
+  const running = live.running, mode = live.mode;
+  const air = document.getElementById("live-toggle");
+  air.textContent = running && mode === "airodump" ? "Stop live" : "Start live";
+  air.classList.toggle("danger", running && mode === "airodump");
+  air.disabled = !OFFENSIVE || (running && mode !== "airodump");
+  document.getElementById("live-dot").classList.toggle("on", running && mode === "airodump");
+
+  const rep = document.getElementById("replay-toggle");
+  const replaying = running && mode === "replay";
+  rep.textContent = replaying ? "Stop replay" : "Replay capture";
+  rep.classList.toggle("danger", replaying);
+  rep.disabled = (running && mode !== "replay") || (!running && !live.loaded);
+  document.getElementById("replay-dot").classList.toggle("on", replaying);
+  document.getElementById("replay-hint").textContent = replaying
+    ? "Revealing the capture… press Stop to halt."
+    : live.loaded
+    ? "Replays the loaded capture node by node."
+    : "Import a capture first, then replay it.";
+}
+
 function setLiveUI(running) {
   live.running = running;
-  document.getElementById("live-toggle").textContent = running ? "Stop live" : "Start live";
-  document.getElementById("live-toggle").classList.toggle("danger", running);
-  document.getElementById("live-dot").classList.toggle("on", running);
+  refreshLiveButtons();
 }
 
 function applyPatch(p) {
@@ -673,19 +697,41 @@ async function startLive() {
   }
 }
 
+// Replay: re-feed the imported capture progressively. Offline, no root.
+async function startReplay() {
+  if (!live.loaded) return toast("Import a capture first", "error");
+  const interval = Number(document.getElementById("replay-interval").value) || 1.2;
+  try {
+    live.fitDone = false;
+    await API.liveStart({ mode: "replay", interval });
+    live.mode = "replay";
+    live.channel = null;
+    live.canDeauth = false;
+    openLiveSocket();
+    setLiveUI(true);
+    toast("Replaying capture", "ok");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
 async function stopLive() {
+  const wasReplay = live.mode === "replay";
   try { await API.liveStop(); } catch (e) { /* ignore */ }
   if (live.ws) { live.ws.close(); live.ws = null; }
   live.mode = null;
   live.channel = null;
   live.canDeauth = false;
   setLiveUI(false);
-  toast("Live capture stopped", "ok");
-  if (OFFENSIVE) loadInterfaces(); // adapter is back to managed mode now
+  toast(wasReplay ? "Replay stopped" : "Live capture stopped", "ok");
+  if (OFFENSIVE && !wasReplay) loadInterfaces(); // adapter is back to managed mode now
 }
 
 document.getElementById("live-toggle").onclick = () =>
-  live.running ? stopLive() : startLive();
+  live.running && live.mode === "airodump" ? stopLive() : startLive();
+
+document.getElementById("replay-toggle").onclick = () =>
+  live.running && live.mode === "replay" ? stopLive() : startReplay();
 
 document.getElementById("live-iface-refresh").onclick = () => loadInterfaces();
 
@@ -731,8 +777,12 @@ function escapeHtml(value) {
   }
   try {
     const payload = await API.graph();
-    if (payload.elements.nodes.length) renderGraph(payload);
+    if (payload.elements.nodes.length) {
+      renderGraph(payload);
+      live.loaded = true;          // a capture is already loaded server-side
+    }
   } catch (e) {
     /* nothing loaded yet */
   }
+  refreshLiveButtons();            // set initial button/enabled state
 })();

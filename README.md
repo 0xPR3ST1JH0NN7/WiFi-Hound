@@ -16,7 +16,7 @@ map build in real time, deauth included.
 - **Graph UI**: APs (red) and clients (blue) as nodes, associations as edges.
 - **Explore**: search, filter (type, encryption, channel), node details, context actions.
 - **Vendor enrichment** from the OUI, fully offline.
-- **Live capture**: replay a loaded CSV, or stream a real `airodump-ng` capture over WebSocket.
+- **Live capture**: stream a real `airodump-ng` capture over WebSocket and watch the map build in real time.
 - **Offensive** (opt in): deauth an AP or a single client during a live capture.
 
 ## Install
@@ -53,22 +53,27 @@ sudo python3 -m wifihound            # also unlocks live radio capture + deauth
 
 (Inside an activated virtualenv you can just use `python -m wifihound`.)
 
-There is one way to run it. Offline analysis and replay work unprivileged;
-live radio capture and deauth turn on automatically when you start it with
-**sudo** (root). No special flags.
+There is one way to run it. Offline analysis works unprivileged; live radio
+capture and deauth turn on automatically when you start it with **sudo**
+(root). No special flags.
 
 Click **Import capture** and pick an `airodump-ng` CSV
-(`airodump-ng -w scan --output-format csv wlan0mon`).
+(`airodump-ng -w scan --output-format csv wlan0mon`) to map a past scan offline.
 
-**Live capture** (sidebar, *Live capture* panel):
+**Live capture** (sidebar, *Live capture* panel) streams a real `airodump-ng`
+capture and maps the network as it appears. It needs root (run with `sudo`):
 
-- **Replay**: import a CSV, then *Start live* to reveal it node by node. No privileges needed.
-- **airodump**: stream a real capture. Choose interface, channel, protocol
-  (WEP / WPA2 / WPA3 / Open), WPS, and an optional ESSID or BSSID filter.
-  Needs root (run with sudo) and a monitor mode interface. WPA handshakes
-  captured during the session (e.g. from a deauth) are flagged on the AP with a 🔑.
+- Pick a **wireless interface** from the auto-detected list (the panel reads the
+  adapters present on the host; hit ↻ to rescan). A managed interface is put
+  into **monitor mode automatically** (`airmon-ng check kill` + start) and
+  returned to managed mode when you stop.
+- Optionally set a fixed **channel**, **protocol** (WEP / WPA2 / WPA3 / Open),
+  **WPS**, and an **ESSID** or **BSSID** filter. A fixed channel also unlocks
+  deauth on the captured APs.
+- WPA handshakes captured during the session (e.g. from a deauth) are flagged on
+  the AP with a 🔑.
 
-The reveal / poll speed is set by the *Interval* field.
+The poll speed is set by the *Interval* field.
 
 ## Offensive operations
 

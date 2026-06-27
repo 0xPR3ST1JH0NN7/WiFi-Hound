@@ -26,6 +26,18 @@ const API = {
     }),
   liveStop: () => fetchJSON("/api/live/stop", { method: "POST" }),
   interfaces: () => fetchJSON("/api/live/interfaces"),
+  enterpriseCert: (payload) =>
+    fetchJSON("/api/operations/enterprise/cert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  enterpriseEap: (payload) =>
+    fetchJSON("/api/operations/enterprise/eap-methods", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
 };
 
 async function fetchJSON(url, opts) {
@@ -75,6 +87,10 @@ const cy = cytoscape({
     {
       selector: 'node[kind = "client"][?unassociated]',
       style: { "background-color": "#8a93a8" },
+    },
+    {
+      selector: 'node[kind = "ap"][?enterprise]',
+      style: { "border-color": "#a78bfa", "border-width": 4 },
     },
     {
       selector: "edge",
@@ -276,15 +292,30 @@ function showDetails(info) {
     offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth from AP…</button>`;
   }
 
+  // Enterprise (802.1X) extras, only on MGT APs.
+  const enterprise = isAp && info.enterprise;
+  const entBadge = enterprise
+    ? `<span class="kind-badge enterprise">802.1X Enterprise</span>` : "";
+  let entBtns = "";
+  if (enterprise) {
+    entBtns += `<button class="btn" id="op-cert-btn">Inspect RADIUS cert</button>`;
+    if (OFFENSIVE) {
+      entBtns += `<button class="btn" id="op-eap-btn">Enumerate EAP methods…</button>`;
+    }
+  }
+
   body.innerHTML = `
     <span class="kind-badge ${info.kind}">${isAp ? "Access Point" : "Client"}</span>
+    ${entBadge}
     <h3>${escapeHtml(title)}</h3>
     ${rows.join("")}
     ${probes}
     <div class="actions">
       <button class="btn" id="neighbors-btn">Highlight neighbors</button>
       ${offBtn}
-    </div>`;
+      ${entBtns}
+    </div>
+    <div id="enterprise-result"></div>`;
 
   const panel = document.getElementById("details");
   const wasHidden = panel.classList.contains("hidden");
@@ -292,6 +323,10 @@ function showDetails(info) {
   document.getElementById("neighbors-btn").onclick = () => highlightNeighbors(info.id);
   const deauthBtn = document.getElementById("op-deauth-btn");
   if (deauthBtn) deauthBtn.onclick = () => openDeauthModal(info);
+  const certBtn = document.getElementById("op-cert-btn");
+  if (certBtn) certBtn.onclick = () => inspectCert(info);
+  const eapBtn = document.getElementById("op-eap-btn");
+  if (eapBtn) eapBtn.onclick = () => openEapModal(info);
 
   // The panel docks on the right and shrinks the graph area; reflow Cytoscape
   // into the new size and, when it just opened, keep the node beside the panel.
@@ -420,7 +455,7 @@ function openDeauthModal(info) {
   const isAp = info.kind === "ap";
   const bssid = isAp ? info.id : info.associated_bssid;
   const client = isAp ? null : info.id;
-  pendingOp = { bssid, client };
+  pendingOp = { type: "deauth", bssid, client };
 
   const target = isAp
     ? `AP <strong>${escapeHtml(info.essid || info.id)}</strong> (${escapeHtml(info.id)})`
@@ -437,7 +472,31 @@ function openDeauthModal(info) {
     <label>Deauth bursts (1–64, 0 = continuous not allowed)</label>
     <input id="op-count" type="number" min="1" max="64" value="5"/>
     <label><input type="checkbox" id="op-dry"/> Dry run (build command only)</label>`;
-  document.getElementById("op-confirm").disabled = !live.canDeauth;
+  const confirm = document.getElementById("op-confirm");
+  confirm.textContent = "Confirm";
+  confirm.classList.add("danger");
+  confirm.disabled = !live.canDeauth;
+  document.getElementById("op-modal").classList.remove("hidden");
+}
+
+// Enterprise: enumerate EAP methods for an AP's ESSID (active; root + ack).
+function openEapModal(info) {
+  pendingOp = { type: "eap", essid: info.essid || "" };
+  document.getElementById("op-title").textContent = "Enumerate EAP methods";
+  document.getElementById("op-body").innerHTML = `
+    <p>Probe which EAP methods <strong>${escapeHtml(info.essid || info.id)}</strong> accepts.</p>
+    <p class="hint">Active 802.1X authentication. Runs for several minutes and the
+      interface is switched to <strong>managed</strong> mode (don't use one mid-capture).
+      Use a legitimate identity; anonymous ones give unreliable results.</p>
+    <label>EAP identity</label>
+    <input id="op-identity" placeholder="DOMAIN\\user"/>
+    <label>Interface</label>
+    <input id="op-iface" placeholder="wlan0"/>
+    <label><input type="checkbox" id="op-dry"/> Dry run (build command only)</label>`;
+  const confirm = document.getElementById("op-confirm");
+  confirm.textContent = "Run";
+  confirm.classList.remove("danger");
+  confirm.disabled = false;
   document.getElementById("op-modal").classList.remove("hidden");
 }
 
@@ -446,8 +505,12 @@ document.getElementById("op-cancel").onclick = () => {
   pendingOp = null;
 };
 
-document.getElementById("op-confirm").onclick = async () => {
+document.getElementById("op-confirm").onclick = () => {
   if (!pendingOp) return;
+  return pendingOp.type === "eap" ? confirmEap() : confirmDeauth();
+};
+
+async function confirmDeauth() {
   const payload = {
     bssid: pendingOp.bssid,
     client: pendingOp.client || null,
@@ -464,7 +527,83 @@ document.getElementById("op-confirm").onclick = async () => {
     document.getElementById("op-modal").classList.add("hidden");
     pendingOp = null;
   }
-};
+}
+
+async function confirmEap() {
+  const identity = document.getElementById("op-identity").value.trim();
+  const iface = document.getElementById("op-iface").value.trim();
+  const dry = document.getElementById("op-dry").checked;
+  if (!identity) return toast("Enter an EAP identity", "error");
+  if (!iface) return toast("Enter an interface", "error");
+  const essid = pendingOp.essid;
+  document.getElementById("op-modal").classList.add("hidden");
+  pendingOp = null;
+  const box = document.getElementById("enterprise-result");
+  if (box && !dry) {
+    box.innerHTML = `<p class="hint">Running EAP enumeration on ${escapeHtml(iface)} —
+      this can take several minutes…</p>`;
+  }
+  try {
+    const res = await API.enterpriseEap({
+      essid, identity, interface: iface, acknowledged: true, dry_run: dry,
+    });
+    renderEap(res, dry);
+  } catch (e) {
+    if (box) box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`;
+    else toast(e.message, "error");
+  }
+}
+
+/* ----------------------------------------------------------- enterprise */
+async function inspectCert(info) {
+  const box = document.getElementById("enterprise-result");
+  if (box) box.innerHTML = `<p class="hint">Inspecting RADIUS certificate…</p>`;
+  try {
+    const res = await API.enterpriseCert({ ap_bssid: info.id });
+    renderCert(res);
+  } catch (e) {
+    if (box) box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function renderCert(res) {
+  const box = document.getElementById("enterprise-result");
+  if (!box) return;
+  if (res.status === "empty" || !res.certificates || !res.certificates.length) {
+    box.innerHTML = `<h4>RADIUS certificate</h4><p class="hint">No certificate found —
+      the capture may be partial, the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`;
+    return;
+  }
+  const certRow = (k, v) =>
+    `<div class="detail-row"><span class="k">${k}</span><span class="v">${escapeHtml(v)}</span></div>`;
+  box.innerHTML = `<h4>RADIUS certificate (${escapeHtml(res.backend)})</h4>` +
+    res.certificates
+      .map((c) =>
+        certRow("Subject", c.subject) + certRow("Issuer", c.issuer) +
+        certRow("Valid from", c.not_before) + certRow("Valid to", c.not_after) +
+        certRow("Serial", c.serial))
+      .join(`<hr class="cert-sep"/>`);
+}
+
+function renderEap(res, dry) {
+  const box = document.getElementById("enterprise-result");
+  if (!box) return;
+  if (dry || res.status === "dry-run") {
+    box.innerHTML = `<h4>EAP enumeration (dry run)</h4>` +
+      `<p class="hint">Would run: <code>${escapeHtml((res.command || []).join(" "))}</code></p>`;
+    return;
+  }
+  const rank = { yes: 0, maybe: 1, no: 2 };
+  const dot = (s) => (s === "yes" ? "🟢" : s === "maybe" ? "🟡" : "⚪");
+  const methods = (res.methods || []).slice()
+    .sort((a, b) => (rank[a.supported] ?? 3) - (rank[b.supported] ?? 3));
+  box.innerHTML = `<h4>EAP methods — ${escapeHtml(res.essid || "")}</h4>` +
+    methods
+      .map((m) =>
+        `<div class="detail-row"><span class="k">${dot(m.supported)} ${escapeHtml(m.method)}</span>` +
+        `<span class="v">${escapeHtml(m.supported)}</span></div>`)
+      .join("");
+}
 
 /* --------------------------------------------------------------- wiring up */
 async function openNode(id) {

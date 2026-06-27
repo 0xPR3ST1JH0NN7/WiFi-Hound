@@ -53,10 +53,8 @@ def require_authorization(acknowledged: bool) -> None:
         )
 
 
-def require_tools(*tools: str) -> None:
+def require_tools(*tools: str, hint: str = "") -> None:
     missing = [t for t in tools if shutil.which(t) is None]
     if missing:
-        raise OperationError(
-            f"Required tool(s) not found on PATH: {', '.join(missing)}. "
-            "Install the aircrack-ng suite."
-        )
+        detail = f"Required tool(s) not found on PATH: {', '.join(missing)}."
+        raise OperationError(f"{detail} {hint}".strip())

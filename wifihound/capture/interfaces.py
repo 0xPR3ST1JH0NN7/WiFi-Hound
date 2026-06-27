@@ -157,7 +157,7 @@ def ensure_monitor_mode(iface: str, acknowledged: bool = True,
 
     # Changing the radio's mode is privileged: enforce the offensive guardrails.
     require_authorization(acknowledged)
-    require_tools("airmon-ng")
+    require_tools("airmon-ng", hint="Install the aircrack-ng suite.")
 
     # Clear interfering processes first so monitor mode actually sticks. This is
     # best-effort: a failure here must not block enabling monitor mode.

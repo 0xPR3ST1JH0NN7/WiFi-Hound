@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from fastapi import (
     APIRouter,
     File,
@@ -24,7 +26,12 @@ from wifihound.capture import (
 )
 from wifihound.enrichment import oui
 from wifihound.graph import WifiGraph
-from wifihound.operations import OperationError, deauth as deauth_op, offensive_available
+from wifihound.operations import (
+    OperationError,
+    deauth as deauth_op,
+    enterprise,
+    offensive_available,
+)
 from wifihound.operations.base import (
     OperationError as _OpError,
     OperationNotAuthorized,
@@ -154,6 +161,80 @@ def operations_deauth(req: DeauthRequest):
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
+# ------------------------------------------------------------- WPA2-Enterprise
+# EAP enumeration seizes the radio for minutes; only allow one at a time.
+_EAP_LOCK = threading.Lock()
+
+
+class CertRequest(BaseModel):
+    cap_path: str | None = None     # defaults to the live capture's pcap
+    ap_bssid: str | None = None     # scope to one AP (wlan.sa == BSSID)
+    dry_run: bool = False
+
+
+@router.post("/operations/enterprise/cert")
+def operations_enterprise_cert(req: CertRequest):
+    """Extract the RADIUS server certificate from a capture. Read-only, no root.
+
+    Uses the running live-capture pcap when ``cap_path`` is omitted (the deauth
+    "reuse the live capture" pattern). Returns ``status: "empty"`` (HTTP 200)
+    when the capture holds no certificate.
+    """
+    cap = req.cap_path or CAPTURE.latest_cap()
+    if not cap:
+        raise HTTPException(
+            status_code=400,
+            detail="No capture file. Start a live airodump capture, or pass "
+                   "cap_path to a .cap/.pcap.")
+    try:
+        return enterprise.extract_radius_cert(
+            cap_path=cap, ap_bssid=req.ap_bssid, dry_run=req.dry_run)
+    except OperationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+class EapMethodsRequest(BaseModel):
+    essid: str
+    identity: str                   # legitimate 802.1X id, e.g. "DOMAIN\\user"
+    interface: str | None = None
+    acknowledged: bool = False
+    dry_run: bool = False
+
+
+@router.post("/operations/enterprise/eap-methods")
+def operations_enterprise_eap(req: EapMethodsRequest):
+    """Enumerate supported EAP methods via EAP_buster.sh.
+
+    Active 802.1X auth against the AP, so it needs root and an acknowledgement.
+    The tool takes the interface to managed mode itself, so pass a free
+    interface (not one mid airodump capture). Runs for several minutes.
+    """
+    interface = (req.interface or "").strip()
+    if not interface:
+        raise HTTPException(status_code=400,
+                            detail="A wireless interface is required.")
+
+    def _run():
+        try:
+            return enterprise.enumerate_eap_methods(
+                interface=interface, essid=req.essid, identity=req.identity,
+                acknowledged=req.acknowledged, dry_run=req.dry_run)
+        except OperationNotAuthorized as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+        except OperationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if req.dry_run:
+        return _run()
+    if not _EAP_LOCK.acquire(blocking=False):
+        raise HTTPException(status_code=409,
+                            detail="An EAP enumeration is already running.")
+    try:
+        return _run()
+    finally:
+        _EAP_LOCK.release()
+
+
 # ----------------------------------------------------------------- live capture
 @router.get("/live/interfaces")
 def live_interfaces():
@@ -193,7 +274,7 @@ async def live_start(req: LiveStartRequest):
         # Real radio capture: same guardrails as the offensive subsystem.
         try:
             require_authorization(req.acknowledged)
-            require_tools("airodump-ng")
+            require_tools("airodump-ng", hint="Install the aircrack-ng suite.")
         except _OpError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         if not req.interface:

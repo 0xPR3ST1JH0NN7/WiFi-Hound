@@ -149,6 +149,11 @@ class CaptureController:
     def channel(self):
         return getattr(self._source, "channel", None)
 
+    def latest_cap(self):
+        """Newest pcap of the live capture (for certificate inspection), if any."""
+        getter = getattr(self._source, "latest_cap", None)
+        return getter() if callable(getter) else None
+
     @property
     def can_deauth(self) -> bool:
         """Deauth needs a live airodump capture locked on one channel."""

@@ -5,9 +5,11 @@ from wifihound.operations.base import (  # noqa: F401
     OperationNotAuthorized,
     offensive_available,
 )
+from wifihound.operations import enterprise  # noqa: F401
 
 __all__ = [
     "OperationError",
     "OperationNotAuthorized",
     "offensive_available",
+    "enterprise",
 ]

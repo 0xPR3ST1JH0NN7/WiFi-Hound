@@ -40,7 +40,7 @@ def deauth(
     (or its subclasses) if any guardrail or validation fails.
     """
     require_authorization(acknowledged)
-    require_tools("aireplay-ng")
+    require_tools("aireplay-ng", hint="Install the aircrack-ng suite.")
 
     bssid = normalize_mac(bssid)
     if not bssid:

@@ -14,6 +14,11 @@ import networkx as nx
 from wifihound.models import AccessPoint, Client, Scan
 
 
+def _is_enterprise(data: dict) -> bool:
+    """WPA-Enterprise (802.1X) APs report MGT in airodump's Authentication."""
+    return "MGT" in (data.get("authentication") or "").upper()
+
+
 class WifiGraph:
     def __init__(self) -> None:
         self.graph = nx.Graph()
@@ -47,6 +52,7 @@ class WifiGraph:
         info["kind"] = n["kind"]
         info["degree"] = self.graph.degree(node_id)
         info["neighbors"] = list(self.graph.neighbors(node_id))
+        info["enterprise"] = n["kind"] == "ap" and _is_enterprise(n["data"])
         return info
 
     def neighbors(self, node_id: str) -> list[str]:
@@ -102,6 +108,7 @@ class WifiGraph:
                 "vendor": data.get("vendor"),
                 "power": data.get("power"),
                 "degree": self.graph.degree(node_id),
+                "enterprise": kind == "ap" and _is_enterprise(data),
             }})
 
         edges = []

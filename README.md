@@ -17,6 +17,8 @@ capture and watch the map build in real time.
 * Offline vendor lookup from the OUI database.
 * Two ways to build the map: replay an imported capture, or live capture a real
   `airodump-ng` stream.
+* WPA2-Enterprise: flag 802.1X APs, inspect the RADIUS certificate, and
+  enumerate the EAP methods a network accepts.
 
 ## Install
 
@@ -60,6 +62,23 @@ channel, protocol, WPS and an ESSID or BSSID filter.
 ![Live capture in action](docs/live-capture.gif)
 
 > Use WiFiHound only on networks you own or are authorized to test.
+
+## WPA2-Enterprise
+
+Enterprise (802.1X) APs are flagged in the graph and their details, with two
+assessment actions when you select one.
+
+* **Inspect RADIUS cert** reads the captured `.cap`/`.pcap` and shows the RADIUS
+  server certificate (subject, issuer, validity, serial). It is read-only and
+  needs no root; it uses `tshark` (or `pcapFilter.sh` when installed) and the
+  `cryptography` package.
+* **Enumerate EAP methods** runs `EAP_buster.sh` to find which EAP methods the
+  network accepts (EAP-TLS, PEAP, TTLS and friends). It authenticates for real,
+  so it needs root, takes a few minutes, and puts the interface in managed mode.
+  Install `EAP_buster.sh` and `wpa_supplicant`, and set `WIFIHOUND_EAP_BUSTER`
+  to the script path if it is not on your PATH.
+
+> These features are for authorized testing only.
 
 ## Authors
 

@@ -113,6 +113,18 @@
       </section>
 
       <section class="panel">
+        <h2>Replay <span id="replay-dot" class="live-dot"></span></h2>
+        <p class="hint">Re-play an <strong>imported</strong> capture node by node, as if it were
+          being discovered live. Fully offline — no radio or root needed.</p>
+        <label class="filter-row">Interval (s)
+          <input id="replay-interval" class="mini-input" type="number" min="0.2" max="10"
+                 step="0.1" value="1.2"/>
+        </label>
+        <button class="btn" id="replay-toggle" disabled>Replay capture</button>
+        <p class="hint" id="replay-hint">Import a capture first, then replay it.</p>
+      </section>
+
+      <section class="panel">
         <h2>Legend</h2>
         <div class="legend"><span class="dot ap"></span> Access Point</div>
         <div class="legend"><span class="dot client"></span> Client</div>

@@ -3,7 +3,6 @@
 
   # WiFiHound
 
-  **Interactive graph analysis for WiFi reconnaissance data.**
 </div>
 
 WiFiHound turns `airodump-ng` output into an explorable graph of access points,

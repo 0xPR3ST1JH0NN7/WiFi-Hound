@@ -185,7 +185,7 @@ def _pass_airodump_guardrails(monkeypatch):
     """Bypass the root + airodump-ng PATH checks for the airodump start path."""
     from wifihound.api import routes
     monkeypatch.setattr(routes, "require_authorization", lambda ack: None)
-    monkeypatch.setattr(routes, "require_tools", lambda *a: None)
+    monkeypatch.setattr(routes, "require_tools", lambda *a, **k: None)
     return routes
 
 

@@ -17,14 +17,14 @@ def test_deauth_blocked_without_root(monkeypatch):
 
 def test_deauth_requires_acknowledgement(monkeypatch):
     _as_root(monkeypatch, True)
-    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a: None)
+    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a, **k: None)
     with pytest.raises(OperationNotAuthorized):
         deauth_mod.deauth("wlan0mon", "DC:A6:32:11:22:33", acknowledged=False)
 
 
 def test_deauth_dry_run(monkeypatch):
     _as_root(monkeypatch, True)
-    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a: None)
+    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a, **k: None)
     result = deauth_mod.deauth(
         "wlan0mon", "dc:a6:32:11:22:33", count=5,
         acknowledged=True, dry_run=True,
@@ -36,7 +36,7 @@ def test_deauth_dry_run(monkeypatch):
 
 def test_deauth_client_targets_one_station(monkeypatch):
     _as_root(monkeypatch, True)
-    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a: None)
+    monkeypatch.setattr(deauth_mod, "require_tools", lambda *a, **k: None)
     result = deauth_mod.deauth(
         "wlan0mon", "DC:A6:32:11:22:33", client="5C:F3:70:01:02:03",
         count=3, acknowledged=True, dry_run=True,

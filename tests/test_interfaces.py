@@ -73,7 +73,7 @@ def rooted(monkeypatch):
     """Pass the root + tool guardrails so the airmon-ng path can be exercised."""
     import wifihound.operations.base as base
     monkeypatch.setattr(base, "_is_root", lambda: True)
-    monkeypatch.setattr(ifaces, "require_tools", lambda *a: None)
+    monkeypatch.setattr(ifaces, "require_tools", lambda *a, **k: None)
 
 
 def _airmon_runner(on_start):
@@ -171,7 +171,7 @@ def test_ensure_monitor_airmon_failure_raises(tmp_path, rooted):
 def test_ensure_monitor_requires_root(tmp_path, monkeypatch):
     import wifihound.operations.base as base
     monkeypatch.setattr(base, "_is_root", lambda: False)
-    monkeypatch.setattr(ifaces, "require_tools", lambda *a: None)
+    monkeypatch.setattr(ifaces, "require_tools", lambda *a, **k: None)
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
     with pytest.raises(OperationNotAuthorized):
         ifaces.ensure_monitor_mode("wlan0", run=lambda c: _proc(), sysfs=str(tmp_path))

@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="WiFiHound — hooded hound at a laptop broadcasting Wi-Fi">
+  <defs>
+    <radialGradient id="h-bg" cx="0.5" cy="0.40" r="0.72">
+      <stop offset="0" stop-color="#0f3a30"/>
+      <stop offset="1" stop-color="#0a1016"/>
+    </radialGradient>
+    <linearGradient id="h-acc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.55" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="h-hood" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#2bd0c6"/>
+      <stop offset="1" stop-color="#0c8f86"/>
+    </linearGradient>
+    <linearGradient id="h-fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cda069"/>
+      <stop offset="1" stop-color="#8a5e34"/>
+    </linearGradient>
+    <linearGradient id="h-ear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9a6c3c"/>
+      <stop offset="1" stop-color="#5f3e20"/>
+    </linearGradient>
+    <linearGradient id="h-muz" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6e5949"/>
+      <stop offset="1" stop-color="#43352a"/>
+    </linearGradient>
+    <linearGradient id="h-metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cdd6dc"/>
+      <stop offset="1" stop-color="#9aa6ad"/>
+    </linearGradient>
+    <filter id="h-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <clipPath id="h-clip"><circle cx="128" cy="128" r="116"/></clipPath>
+  </defs>
+
+  <!-- badge -->
+  <circle cx="128" cy="128" r="120" fill="url(#h-bg)" stroke="url(#h-acc)" stroke-width="5"/>
+
+  <!-- faint binary rain, clipped to the badge -->
+  <g clip-path="url(#h-clip)" fill="#34d399" opacity="0.12"
+     font-family="'Courier New', monospace" font-size="13" letter-spacing="3">
+    <text x="14" y="44">01001011010110010110</text>
+    <text x="2" y="74">10110100101001101001</text>
+    <text x="20" y="190">01101001011010010100</text>
+    <text x="6" y="216">10010110100101101011</text>
+    <text x="150" y="104">0110100</text>
+    <text x="166" y="150">101001</text>
+    <text x="150" y="176">011010</text>
+  </g>
+  <circle cx="128" cy="128" r="106" fill="none" stroke="#1f5b4e" stroke-width="1.5"
+          stroke-dasharray="3 7" opacity="0.5"/>
+
+  <!-- hoodie -->
+  <path fill="url(#h-hood)" d="
+    M40,206 C 34,150 54,100 96,86 Q 128,76 160,86 C 202,100 222,150 216,206
+    L 216,224 L 40,224 Z"/>
+  <!-- inner hood rim (face opening) -->
+  <path fill="#0a6b63" d="
+    M78,120 C 78,98 98,90 128,90 C 158,90 178,98 178,120
+    C 178,146 168,164 150,174 C 138,180 118,180 106,174
+    C 88,164 78,146 78,120 Z"/>
+
+  <!-- Wi-Fi broadcast above the hood: flat, wide arcs; dark underlay for contrast -->
+  <g fill="none" stroke-linecap="round">
+    <g stroke="#08130f" stroke-width="9.5" opacity="0.5">
+      <path d="M106,74 a22,13 0 0 0 44,0"/>
+      <path d="M92,74 a36,19 0 0 0 72,0"/>
+      <path d="M78,74 a50,25 0 0 0 100,0"/>
+    </g>
+    <g stroke="url(#h-acc)" stroke-width="6" filter="url(#h-glow)">
+      <path d="M106,74 a22,13 0 0 0 44,0" opacity="1"/>
+      <path d="M92,74 a36,19 0 0 0 72,0" opacity="0.72"/>
+      <path d="M78,74 a50,25 0 0 0 100,0" opacity="0.46"/>
+    </g>
+  </g>
+  <circle cx="128" cy="77" r="5.5" fill="url(#h-acc)" stroke="#08130f" stroke-width="2"/>
+
+  <!-- long hound ears hanging out of the hood -->
+  <path fill="url(#h-ear)" d="M88,112 C 70,120 62,146 72,168 C 79,182 94,184 99,170
+    C 95,150 97,128 101,116 C 99,110 93,109 88,112 Z"/>
+  <path fill="url(#h-ear)" d="M168,112 C 186,120 194,146 184,168 C 177,182 162,184 157,170
+    C 161,150 159,128 155,116 C 157,110 163,109 168,112 Z"/>
+
+  <!-- face -->
+  <path fill="url(#h-fur)" d="
+    M84,120 C 84,102 100,96 128,96 C 156,96 172,102 172,120
+    C 172,140 164,156 150,165 C 140,171 116,171 106,165
+    C 92,156 84,140 84,120 Z"/>
+
+  <!-- angry brows -->
+  <path fill="#6f4a26" d="M98,110 L122,118 C 121,123 116,124 110,122 L98,116 Z"/>
+  <path fill="#6f4a26" d="M158,110 L134,118 C 135,123 140,124 146,122 L158,116 Z"/>
+
+  <!-- eyes -->
+  <g>
+    <ellipse cx="108" cy="123" rx="6" ry="7.5" fill="#10171c"/>
+    <ellipse cx="148" cy="123" rx="6" ry="7.5" fill="#10171c"/>
+    <circle cx="110.4" cy="120.4" r="1.8" fill="#eafdf6"/>
+    <circle cx="150.4" cy="120.4" r="1.8" fill="#eafdf6"/>
+  </g>
+
+  <!-- muzzle, nose, mouth, chin -->
+  <path fill="url(#h-muz)" d="
+    M104,136 C 104,131 152,131 152,136 C 156,150 152,162 140,168
+    C 132,172 124,172 116,168 C 104,162 100,150 104,136 Z"/>
+  <path fill="#eef6f3" d="M118,166 C 124,170 132,170 138,166 C 136,173 120,173 118,166 Z"/>
+  <path fill="#1a1410" d="M128,137 C 139,137 141,148 132,151 C 129,152 127,152 124,151
+    C 115,148 117,137 128,137 Z"/>
+  <path fill="none" stroke="#1a1410" stroke-width="2.4" stroke-linecap="round"
+        d="M128,151 L128,159 M128,159 C 123,165 117,164 113,159 M128,159 C 133,165 139,164 143,159"/>
+
+  <!-- headphones resting at the neck -->
+  <g>
+    <rect x="60" y="150" width="18" height="30" rx="8" fill="#5b6970"/>
+    <rect x="64" y="154" width="10" height="22" rx="5" fill="url(#h-metal)"/>
+    <rect x="178" y="150" width="18" height="30" rx="8" fill="#5b6970"/>
+    <rect x="182" y="154" width="10" height="22" rx="5" fill="url(#h-metal)"/>
+  </g>
+
+  <!-- laptop in the foreground, WiFiHound mark on the lid -->
+  <g filter="url(#h-glow)">
+    <path d="M58,226 L72,188 Q74,184 80,184 L176,184 Q182,184 184,188 L198,226 Z"
+          fill="#7e8a91"/>
+    <rect x="74" y="186" width="108" height="40" rx="5" fill="url(#h-metal)"/>
+    <rect x="74" y="186" width="108" height="40" rx="5" fill="none"
+          stroke="#5b6970" stroke-width="1.5" opacity="0.6"/>
+    <!-- mark: little Wi-Fi glyph on the lid -->
+    <g fill="none" stroke="url(#h-acc)" stroke-linecap="round" stroke-width="3.4">
+      <path d="M112,212 a16,16 0 0 0 32,0" opacity="0.45"/>
+      <path d="M119,206 a9,9 0 0 0 18,0" opacity="0.8"/>
+    </g>
+    <circle cx="128" cy="213" r="3" fill="url(#h-acc)"/>
+  </g>
+</svg>

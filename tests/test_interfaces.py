@@ -76,17 +76,32 @@ def rooted(monkeypatch):
     monkeypatch.setattr(ifaces, "require_tools", lambda *a: None)
 
 
-def test_ensure_monitor_already_monitor_skips_airmon(tmp_path):
-    _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_IEEE80211_RADIOTAP)
+def _airmon_runner(on_start):
+    """Build a fake airmon-ng runner that records calls.
+
+    ``on_start(cmd)`` is invoked only for ``airmon-ng start`` and returns the
+    CompletedProcess to hand back; other subcommands (check kill, stop) just
+    succeed. The returned callable exposes ``.calls`` for assertions.
+    """
     calls = []
 
     def run(cmd):
         calls.append(cmd)
+        if cmd[:2] == ["airmon-ng", "start"]:
+            return on_start(cmd)
         return _proc()
 
-    out = ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path))
-    assert out == "wlan0"
-    assert calls == []  # already in monitor mode -> airmon-ng is not invoked
+    run.calls = calls
+    return run
+
+
+def test_ensure_monitor_already_monitor_skips_airmon(tmp_path):
+    _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_IEEE80211_RADIOTAP)
+    run = _airmon_runner(lambda cmd: _proc())
+
+    handle = ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path))
+    assert handle.interface == "wlan0" and handle.enabled is False
+    assert run.calls == []  # already in monitor mode -> airmon-ng is not invoked
 
 
 def test_ensure_monitor_missing_interface(tmp_path):
@@ -94,43 +109,63 @@ def test_ensure_monitor_missing_interface(tmp_path):
         ifaces.ensure_monitor_mode("wlan9", run=lambda c: _proc(), sysfs=str(tmp_path))
 
 
-def test_ensure_monitor_creates_vif_named_in_stdout(tmp_path, rooted):
+def test_ensure_monitor_kills_interferers_before_start(tmp_path, rooted):
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
 
-    def run(cmd):
-        assert cmd == ["airmon-ng", "start", "wlan0"]
+    def on_start(cmd):
         _make_iface(tmp_path, "wlan0mon", type_val=ifaces.ARPHRD_IEEE80211_RADIOTAP)
         return _proc(stdout="(monitor mode enabled on wlan0mon)")
 
-    assert ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path)) == "wlan0mon"
+    run = _airmon_runner(on_start)
+    handle = ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path))
+    assert handle.interface == "wlan0mon" and handle.enabled is True
+    # check kill runs first, then the mode switch.
+    assert run.calls[0] == ["airmon-ng", "check", "kill"]
+    assert run.calls[1] == ["airmon-ng", "start", "wlan0"]
+
+
+def test_ensure_monitor_can_skip_check_kill(tmp_path, rooted):
+    _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
+
+    def on_start(cmd):
+        _make_iface(tmp_path, "wlan0mon", type_val=ifaces.ARPHRD_IEEE80211_RADIOTAP)
+        return _proc(stdout="(monitor mode enabled on wlan0mon)")
+
+    run = _airmon_runner(on_start)
+    ifaces.ensure_monitor_mode("wlan0", kill_interferers=False,
+                               run=run, sysfs=str(tmp_path))
+    assert ["airmon-ng", "check", "kill"] not in run.calls
 
 
 def test_ensure_monitor_switches_in_place(tmp_path, rooted):
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
 
-    def run(cmd):
+    def on_start(cmd):
         (tmp_path / "wlan0" / "type").write_text(str(ifaces.ARPHRD_IEEE80211_RADIOTAP))
         return _proc(stdout="no parseable name here")
 
-    assert ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path)) == "wlan0"
+    handle = ifaces.ensure_monitor_mode("wlan0", run=_airmon_runner(on_start),
+                                        sysfs=str(tmp_path))
+    assert handle.interface == "wlan0" and handle.enabled is True
 
 
 def test_ensure_monitor_falls_back_to_mon_convention(tmp_path, rooted):
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
 
-    def run(cmd):
+    def on_start(cmd):
         _make_iface(tmp_path, "wlan0mon", type_val=ifaces.ARPHRD_IEEE80211_RADIOTAP)
         return _proc(stdout="chatty but unparseable output")
 
-    assert ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path)) == "wlan0mon"
+    handle = ifaces.ensure_monitor_mode("wlan0", run=_airmon_runner(on_start),
+                                        sysfs=str(tmp_path))
+    assert handle.interface == "wlan0mon"
 
 
 def test_ensure_monitor_airmon_failure_raises(tmp_path, rooted):
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
+    run = _airmon_runner(lambda cmd: _proc(returncode=1, stdout="airmon-ng failed"))
     with pytest.raises(OperationError):
-        ifaces.ensure_monitor_mode(
-            "wlan0", run=lambda c: _proc(returncode=1, stdout="airmon-ng failed"),
-            sysfs=str(tmp_path))
+        ifaces.ensure_monitor_mode("wlan0", run=run, sysfs=str(tmp_path))
 
 
 def test_ensure_monitor_requires_root(tmp_path, monkeypatch):
@@ -140,3 +175,28 @@ def test_ensure_monitor_requires_root(tmp_path, monkeypatch):
     _make_iface(tmp_path, "wlan0", type_val=ifaces.ARPHRD_ETHER)
     with pytest.raises(OperationNotAuthorized):
         ifaces.ensure_monitor_mode("wlan0", run=lambda c: _proc(), sysfs=str(tmp_path))
+
+
+# ----------------------------------------------------------- restore to managed
+def test_restore_managed_mode_stops_interface_when_enabled():
+    handle = ifaces.MonitorHandle(interface="wlan0mon", original="wlan0", enabled=True)
+    calls = []
+    ifaces.restore_managed_mode(handle, run=lambda cmd: calls.append(cmd))
+    assert calls == [["airmon-ng", "stop", "wlan0mon"]]
+
+
+def test_restore_managed_mode_noop_when_not_enabled():
+    handle = ifaces.MonitorHandle(interface="wlan0", original="wlan0", enabled=False)
+    calls = []
+    ifaces.restore_managed_mode(handle, run=lambda cmd: calls.append(cmd))
+    ifaces.restore_managed_mode(None, run=lambda cmd: calls.append(cmd))
+    assert calls == []
+
+
+def test_restore_managed_mode_swallows_errors():
+    handle = ifaces.MonitorHandle(interface="wlan0mon", original="wlan0", enabled=True)
+
+    def boom(cmd):
+        raise OSError("airmon-ng missing")
+
+    ifaces.restore_managed_mode(handle, run=boom)  # must not raise

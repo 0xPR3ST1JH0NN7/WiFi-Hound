@@ -190,11 +190,14 @@ def _pass_airodump_guardrails(monkeypatch):
 
 
 def test_airodump_start_enables_monitor_and_captures(monkeypatch):
+    from wifihound.capture.interfaces import MonitorHandle
     routes = _pass_airodump_guardrails(monkeypatch)
     monkeypatch.setattr(routes, "interface_exists", lambda name: True)
     # Simulate airmon-ng turning wlan0 -> wlan0mon.
-    monkeypatch.setattr(routes, "ensure_monitor_mode",
-                        lambda iface, acknowledged=True: "wlan0mon")
+    monkeypatch.setattr(
+        routes, "ensure_monitor_mode",
+        lambda iface, acknowledged=True: MonitorHandle(
+            interface="wlan0mon", original=iface, enabled=True))
 
     started = {}
 
@@ -202,6 +205,7 @@ def test_airodump_start_enables_monitor_and_captures(monkeypatch):
         async def start(self, source, mode, interval=None, handshakes=None):
             started["interface"] = source.interface
             started["mode"] = mode
+            started["restores"] = source._monitor  # handle threaded to the source
 
     monkeypatch.setattr(routes, "CAPTURE", FakeController())
 
@@ -211,7 +215,24 @@ def test_airodump_start_enables_monitor_and_captures(monkeypatch):
     assert res.status_code == 200
     body = res.json()
     assert body["interface"] == "wlan0mon"   # reports the real capture interface
-    assert started == {"interface": "wlan0mon", "mode": "airodump"}
+    assert started["interface"] == "wlan0mon" and started["mode"] == "airodump"
+    assert started["restores"].enabled is True   # stop() will restore managed mode
+
+
+def test_airodump_source_restores_managed_mode_on_stop(monkeypatch):
+    import asyncio
+
+    from wifihound.capture import sources
+    from wifihound.capture.interfaces import MonitorHandle
+
+    restored = []
+    monkeypatch.setattr(sources, "restore_managed_mode",
+                        lambda handle: restored.append(handle))
+
+    handle = MonitorHandle(interface="wlan0mon", original="wlan0", enabled=True)
+    src = sources.AirodumpSource("wlan0mon", monitor=handle)
+    asyncio.run(src.stop())  # nothing was started; just exercises the teardown
+    assert restored == [handle]
 
 
 def test_airodump_start_unknown_interface_404(monkeypatch):

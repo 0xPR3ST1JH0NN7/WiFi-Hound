@@ -28,6 +28,11 @@ def create_app() -> FastAPI:
     def index():
         return FileResponse(str(WEB_DIR / "index.html"))
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        # Serve the icon for browsers that request /favicon.ico at the site root.
+        return FileResponse(str(WEB_DIR / "static" / "img" / "favicon.ico"))
+
     @app.get("/health")
     def health():
         return {"status": "ok", "version": __version__}

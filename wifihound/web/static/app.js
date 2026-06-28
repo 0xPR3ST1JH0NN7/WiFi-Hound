@@ -170,6 +170,14 @@ function runLayout(name) {
 }
 
 /* ----------------------------------------------------------------- render */
+// Show the "no capture" splash when empty; show the graph legend only when
+// there are nodes to read it against.
+function setEmptyState(empty) {
+  document.getElementById("empty-state").classList.toggle("hidden", !empty);
+  const legend = document.getElementById("graph-legend");
+  if (legend) legend.classList.toggle("hidden", empty);
+}
+
 function renderGraph(payload) {
   const nodes = payload.elements.nodes.map((n) => {
     if (n.data.kind === "client") {
@@ -184,7 +192,7 @@ function renderGraph(payload) {
   cy.add(payload.elements.edges);
   applyFilters();
   runLayout(); // fits (with zoom cap) once the layout settles
-  document.getElementById("empty-state").classList.toggle("hidden", cy.nodes().length > 0);
+  setEmptyState(cy.nodes().length === 0);
   if (payload.summary) updateStats(payload.summary);
   populateFilterOptions();
 }
@@ -664,36 +672,12 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
   }
 });
 
-document.getElementById("enrich-btn").onclick = async () => {
-  try {
-    const payload = await API.enrich();
-    const summary = (await API.graph()).summary;
-    renderGraph({ ...payload, summary });
-    toast(`Resolved ${payload.resolved} vendors`, "ok");
-  } catch (e) {
-    toast(e.message, "error");
-  }
-};
-
-document.getElementById("reset-btn").onclick = () => {
-  cy.elements().removeClass("faded highlight");
-  cy.nodes().removeClass("hidden-node");
-  // Only the graph filters — not the live-capture checkboxes that share .filter.
-  ["filter-aps", "filter-clients", "filter-unassoc"].forEach(
-    (id) => (document.getElementById(id).checked = true)
-  );
-  document.getElementById("filter-enc").value = "";
-  document.getElementById("filter-chan").value = "";
-  applyFilters();
-  fitGraph();
-};
-
 // Wipe the loaded capture from the view and the server (a fresh start).
 function clearGraph() {
   cy.elements().remove();
   updateStats({});
   populateFilterOptions();
-  document.getElementById("empty-state").classList.remove("hidden");
+  setEmptyState(true);
   closeDetails();
   live.loaded = false;
   refreshLiveButtons();
@@ -770,7 +754,7 @@ function applyPatch(p) {
   recomputeUnassoc();
   applyFilters();
   if (p.summary) updateStats(p.summary);
-  document.getElementById("empty-state").classList.toggle("hidden", cy.nodes().length > 0);
+  setEmptyState(cy.nodes().length === 0);
   setTimeout(() => cy.nodes(".fresh").removeClass("fresh"), 1600);
   scheduleLiveLayout();
 }
@@ -798,7 +782,7 @@ function handleLiveMessage(msg) {
       renderGraph(msg);
       live.fitDone = true;
     } else {
-      document.getElementById("empty-state").classList.add("hidden");
+      setEmptyState(false);
     }
   } else if (msg.type === "patch") {
     applyPatch(msg);
@@ -1005,6 +989,73 @@ function escapeHtml(value) {
   );
 }
 
+/* -------------------------------------------------------------- appearance */
+// User-tunable look & feel: color palette, font family, font size. Stored in
+// localStorage and applied via CSS variables / a theme class on <html>.
+const PREF_KEY = "wh_prefs";
+const THEMES = ["hacker", "cyber", "amber", "matrix"];
+const FONTS = {
+  sans: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  mono: '"JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace',
+  serif: 'Georgia, "Times New Roman", serif',
+};
+const SIZES = ["13", "14", "16"];
+const DEFAULT_PREFS = { theme: "hacker", font: "sans", size: "14" };
+const prefs = { ...DEFAULT_PREFS };
+
+function loadPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PREF_KEY) || "{}");
+    if (THEMES.includes(saved.theme)) prefs.theme = saved.theme;
+    if (FONTS[saved.font]) prefs.font = saved.font;
+    if (SIZES.includes(String(saved.size))) prefs.size = String(saved.size);
+  } catch (e) { /* keep defaults */ }
+}
+
+function applyPrefs() {
+  const el = document.documentElement;
+  THEMES.forEach((t) => el.classList.remove("theme-" + t));
+  el.classList.add("theme-" + prefs.theme);
+  el.style.setProperty("--font", FONTS[prefs.font]);
+  el.style.setProperty("--fs", prefs.size + "px");
+}
+
+function savePrefs() {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch (e) { /* ignore */ }
+}
+
+function syncSettingsForm() {
+  document.getElementById("set-theme").value = prefs.theme;
+  document.getElementById("set-font").value = prefs.font;
+  document.getElementById("set-size").value = prefs.size;
+}
+
+loadPrefs();
+applyPrefs();   // apply before first paint work so the chosen theme shows at once
+
+document.getElementById("settings-btn").onclick = () => {
+  syncSettingsForm();
+  document.getElementById("settings-modal").classList.remove("hidden");
+};
+document.getElementById("settings-done").onclick = () =>
+  document.getElementById("settings-modal").classList.add("hidden");
+document.getElementById("settings-modal").addEventListener("click", (e) => {
+  if (e.target.id === "settings-modal") e.currentTarget.classList.add("hidden"); // backdrop
+});
+document.getElementById("set-theme").onchange = (e) => {
+  prefs.theme = e.target.value; applyPrefs(); savePrefs();
+};
+document.getElementById("set-font").onchange = (e) => {
+  prefs.font = e.target.value; applyPrefs(); savePrefs();
+};
+document.getElementById("set-size").onchange = (e) => {
+  prefs.size = e.target.value; applyPrefs(); savePrefs();
+};
+document.getElementById("settings-reset").onclick = () => {
+  Object.assign(prefs, DEFAULT_PREFS);
+  applyPrefs(); savePrefs(); syncSettingsForm();
+};
+
 /* ------------------------------------------------------------------ start */
 (async function init() {
   try {
@@ -1044,7 +1095,7 @@ function escapeHtml(value) {
   }
   if (!reconnected) {
     try { await API.clear(); } catch (e) { /* ignore */ }
-    document.getElementById("empty-state").classList.remove("hidden");
+    setEmptyState(true);
   }
   refreshLiveButtons();            // set initial button/enabled state
 })();

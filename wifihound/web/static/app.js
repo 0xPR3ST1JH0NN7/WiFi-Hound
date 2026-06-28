@@ -7,13 +7,11 @@ const API = {
     fd.append("file", file);
     return fetchJSON("/api/import", { method: "POST", body: fd });
   },
-  graph: () => fetchJSON("/api/graph"),
   node: (id) => fetchJSON(`/api/node/${encodeURIComponent(id)}`),
   search: (q) => fetchJSON(`/api/search?q=${encodeURIComponent(q)}`),
   config: () => fetchJSON("/api/config"),
   clear: () => fetchJSON("/api/clear", { method: "POST" }),
   liveStatus: () => fetchJSON("/api/live/status"),
-  enrich: () => fetchJSON("/api/enrich/oui", { method: "POST" }),
   deauth: (payload) =>
     fetchJSON("/api/operations/deauth", {
       method: "POST",

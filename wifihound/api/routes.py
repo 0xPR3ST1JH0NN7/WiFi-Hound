@@ -122,16 +122,6 @@ def clear_state():
     return {"status": "cleared", "summary": STATE.stats()}
 
 
-# ------------------------------------------------------------------ enrichment
-@router.post("/enrich/oui")
-def enrich_oui():
-    if STATE.scan is None:
-        raise HTTPException(status_code=400, detail="No capture loaded")
-    resolved = oui.enrich_scan(STATE.scan)
-    STATE.load(STATE.scan)  # rebuild so vendor flows into the graph elements
-    return {"resolved": resolved, **STATE.to_cytoscape()}
-
-
 # ------------------------------------------------------------------ offensive
 class DeauthRequest(BaseModel):
     bssid: str

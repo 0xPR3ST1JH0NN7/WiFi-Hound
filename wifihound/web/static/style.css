@@ -194,7 +194,7 @@ details.subpanel > summary {
   display: flex;
   align-items: center;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -212,7 +212,7 @@ details.subpanel[open] > summary::after { transform: rotate(90deg); }
   text-align: center;
 }
 .stat-num { display: block; font-size: 22px; font-weight: 700; color: var(--accent); }
-.stat-label { font-size: 11px; color: var(--muted); }
+.stat-label { font-size: 12px; color: var(--muted); }
 
 .filter { display: block; margin-bottom: 8px; cursor: pointer; }
 .filter-row {
@@ -245,24 +245,34 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 .dot.ap { background: var(--ap); }
 .dot.client { background: var(--client); }
 .dot.client-un { background: var(--client-un); }
-.hint { color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 12px; }
+.hint { color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 12px; }
 
 /* ------------------------------------------------------------------ graph */
 .graph-wrap { position: relative; flex: 1; min-width: 0; overflow: hidden;
   background: radial-gradient(circle at 50% 40%, var(--bg-2), var(--bg) 70%); }
 #cy { width: 100%; height: 100%; }
 
-/* Legend overlay, top-right of the graph area (moved out of the sidebar). */
+/* Legend + filters overlay, top-right of the graph area. The legend rows are
+   clickable toggles that show/hide each node type. */
 .graph-legend {
   position: absolute; top: 12px; right: 12px; z-index: 4;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
   border: 1px solid var(--border); border-radius: 10px;
   padding: 10px 12px; box-shadow: var(--shadow);
-  font-size: 12px; pointer-events: none; max-width: 230px;
+  font-size: 13px; width: 232px; max-height: calc(100% - 24px); overflow-y: auto;
 }
-.graph-legend .legend { margin-bottom: 5px; }
-.graph-legend .legend:last-of-type { margin-bottom: 0; }
-.legend-hint { color: var(--muted); font-size: 11px; line-height: 1.4;
+.legend-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); margin-bottom: 8px; }
+.legend-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: none; color: var(--text); cursor: pointer;
+  font: inherit; text-align: left; padding: 5px 6px; border-radius: 6px;
+}
+.legend-toggle:hover { background: var(--panel-2); }
+.legend-toggle.off { opacity: .4; text-decoration: line-through; }
+.legend-filters { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 4px; }
+.legend-filters .filter-row { margin: 8px 0; }
+.legend-hint { color: var(--muted); font-size: 12px; line-height: 1.4;
   margin: 8px 0 0; border-top: 1px solid var(--border); padding-top: 7px; }
 .empty-state {
   position: absolute; inset: 0;
@@ -319,9 +329,9 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 .kind-badge.ap { background: rgba(255,93,108,.15); color: var(--ap); }
 .kind-badge.client { background: rgba(77,166,255,.15); color: var(--client); }
 .kind-badge.enterprise { background: rgba(167,139,250,.15); color: #a78bfa; margin-left: 6px; }
-#enterprise-result, #cert-result { margin-top: 12px; }
-#enterprise-result h4, #cert-result h4 { margin: 14px 0 6px; font-size: 13px; }
-#enterprise-result code, #cert-result code { word-break: break-all; }
+#enterprise-result, #cert-modal-body { margin-top: 12px; }
+#enterprise-result h4, #cert-modal-body h4 { margin: 14px 0 6px; font-size: 14px; }
+#enterprise-result code, #cert-modal-body code { word-break: break-all; }
 .cert-sep { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
 .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0;
   border-bottom: 1px solid var(--border); }
@@ -336,10 +346,14 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
   display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .modal-card {
+  position: relative;
   width: 380px; max-width: 92vw; background: var(--panel-2);
   border: 1px solid var(--border); border-radius: 14px; padding: 22px;
   box-shadow: var(--shadow);
 }
+.cert-card { width: 560px; }
+#cert-modal-body { margin-top: 6px; }
+#cert-modal-body .detail-row .v { font-family: var(--font); }
 .modal-card h3 { margin: 0 0 14px; }
 .modal-card label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
 .modal-card input, .modal-card select {

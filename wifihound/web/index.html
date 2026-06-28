@@ -46,30 +46,6 @@
       </section>
 
       <details class="panel">
-        <summary><h2>Filters &amp; view</h2></summary>
-        <div class="panel-body">
-          <label class="filter"><input type="checkbox" id="filter-aps" checked/> Access Points</label>
-          <label class="filter"><input type="checkbox" id="filter-clients" checked/> Clients</label>
-          <label class="filter"><input type="checkbox" id="filter-unassoc" checked/> Unassociated clients</label>
-          <label class="filter-row">Encryption
-            <select id="filter-enc"><option value="">all</option></select>
-          </label>
-          <label class="filter-row">Channel
-            <select id="filter-chan"><option value="">all</option></select>
-          </label>
-          <label class="filter-row">Layout
-            <select id="layout-select">
-              <option value="fcose">force (fcose)</option>
-              <option value="concentric">concentric</option>
-              <option value="breadthfirst">hierarchical</option>
-              <option value="circle">circle</option>
-              <option value="grid">grid</option>
-            </select>
-          </label>
-        </div>
-      </details>
-
-      <details class="panel">
         <summary><h2>Live capture <span id="live-dot" class="live-dot"></span></h2></summary>
         <div class="panel-body">
           <p class="hint" id="live-locked" style="display:none">
@@ -139,12 +115,10 @@
       <details class="panel">
         <summary><h2>RADIUS certificate</h2></summary>
         <div class="panel-body">
-          <label class="filter-row">BSSID
-            <input id="cert-bssid" class="mini-input" placeholder="any"/>
-          </label>
+          <p class="hint">Read the RADIUS server certificate from an enterprise
+            <code>.cap</code> / <code>.pcap</code>. Offline, no root.</p>
           <label class="btn" for="cert-file">Upload .cap / .pcap</label>
           <input id="cert-file" type="file" accept=".cap,.pcap,.pcapng" hidden/>
-          <div id="cert-result"></div>
         </div>
       </details>
 
@@ -155,10 +129,31 @@
     <section class="graph-wrap">
       <div id="cy"></div>
       <div class="graph-legend hidden" id="graph-legend">
-        <div class="legend"><span class="dot ap"></span> Access Point</div>
-        <div class="legend"><span class="dot client"></span> Client</div>
-        <div class="legend"><span class="dot client-un"></span> Unassociated</div>
-        <p class="legend-hint">Right click a node for actions · drag to pan · scroll to zoom</p>
+        <div class="legend-title">Filters &amp; view</div>
+        <button type="button" class="legend-toggle" id="lt-aps" data-filter="aps">
+          <span class="dot ap"></span> Access Points</button>
+        <button type="button" class="legend-toggle" id="lt-clients" data-filter="clients">
+          <span class="dot client"></span> Clients</button>
+        <button type="button" class="legend-toggle" id="lt-unassoc" data-filter="unassoc">
+          <span class="dot client-un"></span> Unassociated</button>
+        <div class="legend-filters">
+          <label class="filter-row">Encryption
+            <select id="filter-enc"><option value="">all</option></select>
+          </label>
+          <label class="filter-row">Channel
+            <select id="filter-chan"><option value="">all</option></select>
+          </label>
+          <label class="filter-row">Layout
+            <select id="layout-select">
+              <option value="fcose">force (fcose)</option>
+              <option value="concentric">concentric</option>
+              <option value="breadthfirst">hierarchical</option>
+              <option value="circle">circle</option>
+              <option value="grid">grid</option>
+            </select>
+          </label>
+        </div>
+        <p class="legend-hint">Click an item to filter · right click a node for actions</p>
       </div>
       <div id="empty-state" class="empty-state">
         <img src="/static/img/cat_logo.png" alt="" class="empty-logo"/>
@@ -231,6 +226,15 @@
         <button class="btn ghost" id="settings-reset">Reset</button>
         <button class="btn primary" id="settings-done">Done</button>
       </div>
+    </div>
+  </div>
+
+  <!-- RADIUS certificate result, shown centered for readability -->
+  <div id="cert-modal" class="modal hidden">
+    <div class="modal-card cert-card">
+      <button class="details-close" id="cert-modal-close" aria-label="Close">&times;</button>
+      <h3>RADIUS certificate</h3>
+      <div id="cert-modal-body"></div>
     </div>
   </div>
 

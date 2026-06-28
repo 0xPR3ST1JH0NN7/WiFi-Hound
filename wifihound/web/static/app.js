@@ -232,10 +232,16 @@ function fillSelect(id, values) {
 }
 
 /* ----------------------------------------------------------------- filters */
+// A legend row is "on" unless it carries the .off class (toggled by clicking it).
+function filterActive(name) {
+  const el = document.getElementById("lt-" + name);
+  return !el || !el.classList.contains("off");
+}
+
 function applyFilters() {
-  const showAps = document.getElementById("filter-aps").checked;
-  const showClients = document.getElementById("filter-clients").checked;
-  const showUnassoc = document.getElementById("filter-unassoc").checked;
+  const showAps = filterActive("aps");
+  const showClients = filterActive("clients");
+  const showUnassoc = filterActive("unassoc");
   const enc = document.getElementById("filter-enc").value;
   const chan = document.getElementById("filter-chan").value;
 
@@ -301,23 +307,25 @@ function showDetails(info) {
   const title = isAp ? info.essid || "&lt;Hidden&gt;" : info.id;
   const clientAssociated =
     !isAp && info.associated_bssid && info.associated_bssid !== "(not associated)";
+  // Offensive / enterprise actions act on a *live* radio capture, so they are
+  // pointless on a static import or replay — only offer them during a live
+  // airodump session (deauth additionally needs a fixed channel).
+  const liveActive = live.running && live.mode === "airodump";
   let offBtn = "";
-  if (OFFENSIVE && isAp) {
+  if (live.canDeauth && isAp) {
     offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth this AP…</button>`;
-  } else if (OFFENSIVE && clientAssociated) {
+  } else if (live.canDeauth && clientAssociated) {
     offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth from AP…</button>`;
   }
 
-  // Enterprise (802.1X) extras, only on MGT APs.
+  // Enterprise (802.1X) badge is informational; its actions need a live capture.
   const enterprise = isAp && info.enterprise;
   const entBadge = enterprise
     ? `<span class="kind-badge enterprise">802.1X Enterprise</span>` : "";
   let entBtns = "";
-  if (enterprise) {
+  if (enterprise && liveActive) {
     entBtns += `<button class="btn" id="op-cert-btn">Inspect RADIUS cert</button>`;
-    if (OFFENSIVE) {
-      entBtns += `<button class="btn" id="op-eap-btn">Enumerate EAP methods…</button>`;
-    }
+    entBtns += `<button class="btn" id="op-eap-btn">Enumerate EAP methods…</button>`;
   }
 
   body.innerHTML = `
@@ -573,34 +581,41 @@ async function confirmEap() {
 }
 
 /* ----------------------------------------------------------- enterprise */
+// The certificate is shown in a centered modal so it reads clearly.
+function showCertModal(html) {
+  document.getElementById("cert-modal-body").innerHTML = html;
+  document.getElementById("cert-modal").classList.remove("hidden");
+}
+
+function closeCertModal() {
+  document.getElementById("cert-modal").classList.add("hidden");
+}
+
 async function inspectCert(info) {
-  const box = document.getElementById("enterprise-result");
-  if (box) box.innerHTML = `<p class="hint">Inspecting RADIUS certificate…</p>`;
+  showCertModal(`<p class="hint">Inspecting RADIUS certificate…</p>`);
   try {
-    const res = await API.enterpriseCert({ ap_bssid: info.id });
-    renderCert(res);
+    renderCert(await API.enterpriseCert({ ap_bssid: info.id }));
   } catch (e) {
-    if (box) box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`;
+    showCertModal(`<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`);
   }
 }
 
-function renderCert(res, box) {
-  box = box || document.getElementById("enterprise-result");
-  if (!box) return;
+function renderCert(res) {
   if (res.status === "empty" || !res.certificates || !res.certificates.length) {
-    box.innerHTML = `<h4>RADIUS certificate</h4><p class="hint">No certificate found.
-      The capture may be partial, the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`;
+    showCertModal(`<p class="hint">No certificate found. The capture may be partial,
+      the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`);
     return;
   }
   const certRow = (k, v) =>
     `<div class="detail-row"><span class="k">${k}</span><span class="v">${escapeHtml(v)}</span></div>`;
-  box.innerHTML = `<h4>RADIUS certificate (${escapeHtml(res.backend)})</h4>` +
+  showCertModal(
+    `<p class="hint">Backend: ${escapeHtml(res.backend)}</p>` +
     res.certificates
       .map((c) =>
         certRow("Subject", c.subject) + certRow("Issuer", c.issuer) +
         certRow("Valid from", c.not_before) + certRow("Valid to", c.not_after) +
         certRow("Serial", c.serial))
-      .join(`<hr class="cert-sep"/>`);
+      .join(`<hr class="cert-sep"/>`));
 }
 
 function renderEap(res, dry) {
@@ -627,16 +642,19 @@ function renderEap(res, dry) {
 document.getElementById("cert-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  const bssid = document.getElementById("cert-bssid").value.trim();
-  const box = document.getElementById("cert-result");
-  box.innerHTML = `<p class="hint">Inspecting ${escapeHtml(file.name)}…</p>`;
+  showCertModal(`<p class="hint">Inspecting ${escapeHtml(file.name)}…</p>`);
   try {
-    renderCert(await API.enterpriseCertUpload(file, bssid), box);
+    renderCert(await API.enterpriseCertUpload(file));
   } catch (err) {
-    box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(err.message)}</p>`;
+    showCertModal(`<p class="hint" style="color:#ffb3ba">${escapeHtml(err.message)}</p>`);
   } finally {
     e.target.value = "";
   }
+});
+
+document.getElementById("cert-modal-close").onclick = closeCertModal;
+document.getElementById("cert-modal").addEventListener("click", (e) => {
+  if (e.target.id === "cert-modal") closeCertModal();   // click backdrop to close
 });
 
 /* --------------------------------------------------------------- wiring up */
@@ -695,8 +713,12 @@ document.getElementById("clear-btn").onclick = async () => {
 
 document.getElementById("details-close").onclick = closeDetails;
 document.getElementById("layout-select").onchange = (e) => runLayout(e.target.value);
-["filter-aps", "filter-clients", "filter-unassoc", "filter-enc", "filter-chan"].forEach(
+["filter-enc", "filter-chan"].forEach(
   (id) => document.getElementById(id).addEventListener("change", applyFilters)
+);
+// Clickable legend rows toggle each node type on/off.
+document.querySelectorAll(".legend-toggle").forEach((btn) =>
+  btn.addEventListener("click", () => { btn.classList.toggle("off"); applyFilters(); })
 );
 
 /* ------------------------------------------------------------- live capture */

@@ -1,5 +1,5 @@
-"""Data-enrichment helpers (OUI vendor lookup, optional geolocation)."""
+"""Data-enrichment helpers (OUI vendor lookup)."""
 
-from wifihound.enrichment import geo, oui  # noqa: F401
+from wifihound.enrichment import oui  # noqa: F401
 
-__all__ = ["oui", "geo"]
+__all__ = ["oui"]

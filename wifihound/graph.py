@@ -60,11 +60,6 @@ class WifiGraph:
         info["enterprise"] = n["kind"] == "ap" and _is_enterprise(n["data"])
         return info
 
-    def neighbors(self, node_id: str) -> list[str]:
-        if node_id not in self.graph:
-            return []
-        return list(self.graph.neighbors(node_id))
-
     def search(self, query: str) -> list[dict]:
         """Case-insensitive match over id, essid, vendor and probed essids."""
         q = (query or "").strip().lower()
@@ -82,15 +77,6 @@ class WifiGraph:
                     "label": data.get("essid") or node_id,
                 })
         return results
-
-    def path(self, source: str, target: str) -> list[str]:
-        """Shortest path between two nodes, or [] if none."""
-        if source not in self.graph or target not in self.graph:
-            return []
-        try:
-            return nx.shortest_path(self.graph, source, target)
-        except nx.NetworkXNoPath:
-            return []
 
     # -------------------------------------------------------------- serialise
     def to_cytoscape(self) -> dict:

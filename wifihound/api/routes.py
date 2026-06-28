@@ -106,12 +106,6 @@ def search(q: str = ""):
     return {"query": q, "results": results}
 
 
-@router.get("/path")
-def path(source: str, target: str):
-    return {"source": source, "target": target,
-            "path": STATE.path(source, target)}
-
-
 @router.get("/config")
 def config():
     # Offensive / live-radio features are unlocked by running as root (sudo).

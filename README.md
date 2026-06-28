@@ -1,8 +1,5 @@
 <div align="center">
   <img src="wifihound/web/static/img/logo-wordmark.png" alt="WiFiHound" width="440"/>
-
-  # WiFiHound
-
 </div>
 
 WiFiHound turns `airodump-ng` output into an explorable graph of access points,

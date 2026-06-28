@@ -26,6 +26,7 @@
       <ul id="search-results" class="search-results hidden"></ul>
     </div>
     <div class="topbar-actions">
+      <button class="btn ghost icon-btn" id="settings-btn" title="Appearance settings" aria-label="Appearance settings">⚙</button>
       <button class="btn ghost" id="clear-btn" title="Remove the loaded capture">Clear</button>
       <label class="btn primary" for="file-input">Import capture</label>
       <input id="file-input" type="file" accept=".csv,.txt" hidden/>
@@ -44,7 +45,7 @@
         </div>
       </section>
 
-      <details class="panel" open>
+      <details class="panel">
         <summary><h2>Filters &amp; view</h2></summary>
         <div class="panel-body">
           <label class="filter"><input type="checkbox" id="filter-aps" checked/> Access Points</label>
@@ -65,12 +66,10 @@
               <option value="grid">grid</option>
             </select>
           </label>
-          <button class="btn" id="enrich-btn">Enrich vendors (OUI)</button>
-          <button class="btn ghost" id="reset-btn">Reset view</button>
         </div>
       </details>
 
-      <details class="panel" open>
+      <details class="panel">
         <summary><h2>Live capture <span id="live-dot" class="live-dot"></span></h2></summary>
         <div class="panel-body">
           <p class="hint" id="live-locked" style="display:none">
@@ -149,21 +148,18 @@
         </div>
       </details>
 
-      <details class="panel">
-        <summary><h2>Legend</h2></summary>
-        <div class="panel-body">
-          <div class="legend"><span class="dot ap"></span> Access Point</div>
-          <div class="legend"><span class="dot client"></span> Client</div>
-          <div class="legend"><span class="dot client-un"></span> Unassociated client</div>
-          <p class="hint">Right click a node for actions. Drag to pan, scroll to zoom.</p>
-        </div>
-      </details>
     </aside>
 
     <div class="resizer" id="resizer-left" title="Drag to resize"></div>
 
     <section class="graph-wrap">
       <div id="cy"></div>
+      <div class="graph-legend hidden" id="graph-legend">
+        <div class="legend"><span class="dot ap"></span> Access Point</div>
+        <div class="legend"><span class="dot client"></span> Client</div>
+        <div class="legend"><span class="dot client-un"></span> Unassociated</div>
+        <p class="legend-hint">Right click a node for actions · drag to pan · scroll to zoom</p>
+      </div>
       <div id="empty-state" class="empty-state">
         <img src="/static/img/cat_logo.png" alt="" class="empty-logo"/>
         <h3>No capture loaded</h3>
@@ -192,6 +188,36 @@
       <div class="modal-actions">
         <button class="btn ghost" id="op-cancel">Cancel</button>
         <button class="btn danger" id="op-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Appearance settings -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Appearance</h3>
+      <label for="set-theme">Color palette</label>
+      <select id="set-theme">
+        <option value="hacker">Hacker — red on black</option>
+        <option value="cyber">Cyber — teal on navy</option>
+        <option value="amber">Amber — gold on black</option>
+        <option value="matrix">Matrix — green on black</option>
+      </select>
+      <label for="set-font">Font</label>
+      <select id="set-font">
+        <option value="sans">Sans-serif</option>
+        <option value="mono">Monospace</option>
+        <option value="serif">Serif</option>
+      </select>
+      <label for="set-size">Font size</label>
+      <select id="set-size">
+        <option value="13">Small</option>
+        <option value="14">Normal</option>
+        <option value="16">Large</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn ghost" id="settings-reset">Reset</button>
+        <button class="btn primary" id="settings-done">Done</button>
       </div>
     </div>
   </div>

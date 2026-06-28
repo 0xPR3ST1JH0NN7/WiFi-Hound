@@ -2,17 +2,17 @@
   /* Default theme: "hacker" — red on black. Switchable in Appearance settings.
      Node colors (--ap/--client/--client-un) stay fixed across themes so the
      graph and its legend always agree, regardless of the chrome palette. */
-  --bg: #0a0a0a;
-  --bg-2: #100c0c;
-  --panel: #161010;
-  --panel-2: #1f1414;
-  --border: #3d1f1f;
-  --text: #f3e9e9;
-  --muted: #a08585;
-  --accent: #ff2e2e;
-  --accent-2: #8b0000;
+  --bg: #000000;
+  --bg-2: #070707;
+  --panel: #0d0a0a;
+  --panel-2: #140e0e;
+  --border: #3a1414;
+  --text: #f5eaea;
+  --muted: #a07f7f;
+  --accent: #ff2a2a;
+  --accent-2: #a40000;
   --danger: #ff3b3b;
-  --btn-primary-text: #120000;
+  --btn-primary-text: #140000;
   --ap: #ff5d6c;
   --client: #4da6ff;
   --client-un: #8a93a8;
@@ -351,7 +351,8 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
   margin: 16px 0; padding: 10px 12px; border-radius: 8px; font-size: 12px;
   background: rgba(255,93,108,.1); border: 1px solid rgba(255,93,108,.4); color: #ffb3ba;
 }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.modal-actions .btn + .btn { margin-top: 0; }   /* keep buttons aligned, not stacked */
 
 /* ------------------------------------------------------------------ toast */
 .toast {

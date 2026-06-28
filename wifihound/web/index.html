@@ -73,7 +73,7 @@
         <summary><h2>Live capture <span id="live-dot" class="live-dot"></span></h2></summary>
         <div class="panel-body">
           <p class="hint" id="live-locked" style="display:none">
-            Live capture needs root — start WiFiHound with <code>sudo</code>.
+            Live capture needs root. Start WiFiHound with <code>sudo</code>.
           </p>
           <div id="live-airodump-opts">
             <label class="filter-row">Interface
@@ -198,23 +198,35 @@
       <h3>Appearance</h3>
       <label for="set-theme">Color palette</label>
       <select id="set-theme">
-        <option value="hacker">Hacker — red on black</option>
-        <option value="cyber">Cyber — teal on navy</option>
-        <option value="amber">Amber — gold on black</option>
-        <option value="matrix">Matrix — green on black</option>
+        <option value="hacker">Hacker (red on black)</option>
+        <option value="cyber">Cyber (teal on navy)</option>
+        <option value="amber">Amber (gold on black)</option>
+        <option value="matrix">Matrix (green on black)</option>
       </select>
       <label for="set-font">Font</label>
       <select id="set-font">
-        <option value="sans">Sans-serif</option>
+        <option value="system">System UI</option>
         <option value="mono">Monospace</option>
-        <option value="serif">Serif</option>
+        <option value="jetbrains">JetBrains Mono</option>
+        <option value="fira">Fira Code</option>
+        <option value="source">Source Code Pro</option>
+        <option value="cascadia">Cascadia Code</option>
+        <option value="ibmplex">IBM Plex Mono</option>
+        <option value="ubuntumono">Ubuntu Mono</option>
+        <option value="dejavumono">DejaVu Sans Mono</option>
+        <option value="consolas">Consolas</option>
+        <option value="menlo">Menlo / Monaco</option>
+        <option value="courier">Courier New</option>
+        <option value="roboto">Roboto</option>
+        <option value="ubuntu">Ubuntu</option>
+        <option value="verdana">Verdana</option>
+        <option value="tahoma">Tahoma</option>
+        <option value="trebuchet">Trebuchet MS</option>
+        <option value="georgia">Georgia</option>
+        <option value="times">Times New Roman</option>
       </select>
-      <label for="set-size">Font size</label>
-      <select id="set-size">
-        <option value="13">Small</option>
-        <option value="14">Normal</option>
-        <option value="16">Large</option>
-      </select>
+      <label for="set-size">Font size (px)</label>
+      <input id="set-size" type="number" min="10" max="28" step="1" value="14"/>
       <div class="modal-actions">
         <button class="btn ghost" id="settings-reset">Reset</button>
         <button class="btn primary" id="settings-done">Done</button>

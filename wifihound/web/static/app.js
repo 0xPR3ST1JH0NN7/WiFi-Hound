@@ -480,14 +480,14 @@ function openDeauthModal(info) {
     : `client <strong>${escapeHtml(info.id)}</strong> off AP <strong>${escapeHtml(bssid)}</strong>`;
   const capLine = live.canDeauth
     ? `Uses the live capture interface, locked on channel <strong>${escapeHtml(live.channel)}</strong>.`
-    : `<span style="color:#ffb3ba">No fixed-channel airodump capture is running — start a
+    : `<span style="color:#ffb3ba">No fixed channel airodump capture is running. Start a
        live airodump capture on a channel to enable deauth.</span>`;
 
   document.getElementById("op-title").textContent = "Deauthentication";
   document.getElementById("op-body").innerHTML = `
     <p>Target ${target}</p>
     <p class="hint">${capLine}</p>
-    <label>Deauth bursts (1–64, 0 = continuous not allowed)</label>
+    <label>Deauth bursts (1 to 64, 0 = continuous not allowed)</label>
     <input id="op-count" type="number" min="1" max="64" value="5"/>
     <label><input type="checkbox" id="op-dry"/> Dry run (build command only)</label>`;
   const confirm = document.getElementById("op-confirm");
@@ -558,8 +558,8 @@ async function confirmEap() {
   pendingOp = null;
   const box = document.getElementById("enterprise-result");
   if (box && !dry) {
-    box.innerHTML = `<p class="hint">Running EAP enumeration on ${escapeHtml(iface)} —
-      this can take several minutes…</p>`;
+    box.innerHTML = `<p class="hint">Running EAP enumeration on ${escapeHtml(iface)}.
+      This can take several minutes…</p>`;
   }
   try {
     const res = await API.enterpriseEap({
@@ -588,8 +588,8 @@ function renderCert(res, box) {
   box = box || document.getElementById("enterprise-result");
   if (!box) return;
   if (res.status === "empty" || !res.certificates || !res.certificates.length) {
-    box.innerHTML = `<h4>RADIUS certificate</h4><p class="hint">No certificate found —
-      the capture may be partial, the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`;
+    box.innerHTML = `<h4>RADIUS certificate</h4><p class="hint">No certificate found.
+      The capture may be partial, the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`;
     return;
   }
   const certRow = (k, v) =>
@@ -615,7 +615,7 @@ function renderEap(res, dry) {
   const dot = (s) => (s === "yes" ? "🟢" : s === "maybe" ? "🟡" : "⚪");
   const methods = (res.methods || []).slice()
     .sort((a, b) => (rank[a.supported] ?? 3) - (rank[b.supported] ?? 3));
-  box.innerHTML = `<h4>EAP methods — ${escapeHtml(res.essid || "")}</h4>` +
+  box.innerHTML = `<h4>EAP methods: ${escapeHtml(res.essid || "")}</h4>` +
     methods
       .map((m) =>
         `<div class="detail-row"><span class="k">${dot(m.supported)} ${escapeHtml(m.method)}</span>` +
@@ -690,7 +690,7 @@ document.getElementById("clear-btn").onclick = async () => {
   if (live.running) saved = await stopLive({ silent: true });
   try { await API.clear(); } catch (e) { /* ignore */ }
   clearGraph();
-  toast(saved ? `Capture cleared — saved to ${saved}` : "Capture cleared", "ok");
+  toast(saved ? `Capture cleared. Saved to ${saved}` : "Capture cleared", "ok");
 };
 
 document.getElementById("details-close").onclick = closeDetails;
@@ -865,7 +865,7 @@ async function startLive() {
     setLiveUI(true);
     const onIface =
       res.interface && res.interface !== iface ? ` on ${res.interface}` : "";
-    const extra = live.canDeauth ? ` — deauth enabled (ch ${channel})` : "";
+    const extra = live.canDeauth ? ` (deauth enabled, ch ${channel})` : "";
     toast(`Live capture started${onIface}${extra}`, "ok");
     loadInterfaces(); // the adapter may now report as monitor / be renamed
   } catch (e) {
@@ -995,20 +995,42 @@ function escapeHtml(value) {
 const PREF_KEY = "wh_prefs";
 const THEMES = ["hacker", "cyber", "amber", "matrix"];
 const FONTS = {
-  sans: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-  mono: '"JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace',
-  serif: 'Georgia, "Times New Roman", serif',
+  system: '"Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  mono: 'ui-monospace, monospace',
+  jetbrains: '"JetBrains Mono", ui-monospace, monospace',
+  fira: '"Fira Code", ui-monospace, monospace',
+  source: '"Source Code Pro", ui-monospace, monospace',
+  cascadia: '"Cascadia Code", "Cascadia Mono", ui-monospace, monospace',
+  ibmplex: '"IBM Plex Mono", ui-monospace, monospace',
+  ubuntumono: '"Ubuntu Mono", ui-monospace, monospace',
+  dejavumono: '"DejaVu Sans Mono", ui-monospace, monospace',
+  consolas: 'Consolas, "Lucida Console", monospace',
+  menlo: 'Menlo, Monaco, "Liberation Mono", monospace',
+  courier: '"Courier New", Courier, monospace',
+  roboto: 'Roboto, "Helvetica Neue", Arial, sans-serif',
+  ubuntu: 'Ubuntu, "Segoe UI", sans-serif',
+  verdana: 'Verdana, Geneva, sans-serif',
+  tahoma: 'Tahoma, Geneva, sans-serif',
+  trebuchet: '"Trebuchet MS", Helvetica, sans-serif',
+  georgia: 'Georgia, "Times New Roman", serif',
+  times: '"Times New Roman", Times, serif',
 };
-const SIZES = ["13", "14", "16"];
-const DEFAULT_PREFS = { theme: "hacker", font: "sans", size: "14" };
+const SIZE_MIN = 10, SIZE_MAX = 28;
+const DEFAULT_PREFS = { theme: "hacker", font: "system", size: 14 };
 const prefs = { ...DEFAULT_PREFS };
+
+function clampSize(n) {
+  n = parseInt(n, 10);
+  if (!Number.isFinite(n)) return DEFAULT_PREFS.size;
+  return Math.max(SIZE_MIN, Math.min(SIZE_MAX, n));
+}
 
 function loadPrefs() {
   try {
     const saved = JSON.parse(localStorage.getItem(PREF_KEY) || "{}");
     if (THEMES.includes(saved.theme)) prefs.theme = saved.theme;
     if (FONTS[saved.font]) prefs.font = saved.font;
-    if (SIZES.includes(String(saved.size))) prefs.size = String(saved.size);
+    if (saved.size != null) prefs.size = clampSize(saved.size);
   } catch (e) { /* keep defaults */ }
 }
 
@@ -1048,8 +1070,13 @@ document.getElementById("set-theme").onchange = (e) => {
 document.getElementById("set-font").onchange = (e) => {
   prefs.font = e.target.value; applyPrefs(); savePrefs();
 };
-document.getElementById("set-size").onchange = (e) => {
-  prefs.size = e.target.value; applyPrefs(); savePrefs();
+const sizeInput = document.getElementById("set-size");
+sizeInput.oninput = (e) => {                 // live preview as you type/spin
+  prefs.size = clampSize(e.target.value); applyPrefs(); savePrefs();
+};
+sizeInput.onchange = (e) => {                 // snap the field to the clamped value
+  prefs.size = clampSize(e.target.value); e.target.value = prefs.size;
+  applyPrefs(); savePrefs();
 };
 document.getElementById("settings-reset").onclick = () => {
   Object.assign(prefs, DEFAULT_PREFS);

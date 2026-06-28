@@ -405,8 +405,10 @@ cy.cxtmenu({
       { content: "Copy ID", select: () => copyText(id) },
     ];
     // Deauth an AP directly, or a client off its associated AP (degree > 0).
+    // Only during a live airodump capture on a fixed channel — pointless on a
+    // static import / replay.
     const canDeauthNode = isAp || (ele.data("kind") === "client" && ele.degree(false) > 0);
-    if (OFFENSIVE && canDeauthNode) {
+    if (live.canDeauth && canDeauthNode) {
       cmds.push({
         content: "Deauth",
         select: () => API.node(id).then(openDeauthModal),
@@ -600,21 +602,67 @@ async function inspectCert(info) {
   }
 }
 
+// Friendly names for the distinguished-name components, so you don't have to
+// remember the short codes.
+const DN_LABELS = {
+  CN: "Common Name (CN)",
+  O: "Organization (O)",
+  OU: "Organizational Unit (OU)",
+  C: "Country (C)",
+  ST: "State / Province (ST)",
+  L: "Locality (L)",
+  DC: "Domain Component (DC)",
+  E: "Email",
+  EMAILADDRESS: "Email",
+  "1.2.840.113549.1.9.1": "Email",
+  SN: "Surname (SN)",
+  GN: "Given Name (GN)",
+  SERIALNUMBER: "Serial Number",
+  "2.5.4.5": "Serial Number",
+};
+function dnLabel(key) {
+  return DN_LABELS[key] || DN_LABELS[key.toUpperCase()] || key;
+}
+
+// Parse an RFC 4514 distinguished name ("CN=...,O=...") into {key,val} pairs,
+// honouring backslash escapes (e.g. "\,").
+function parseDN(dn) {
+  const parts = [];
+  let cur = "", esc = false;
+  for (const ch of String(dn || "")) {
+    if (esc) { cur += ch; esc = false; }
+    else if (ch === "\\") esc = true;
+    else if (ch === ",") { parts.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  if (cur.trim()) parts.push(cur);
+  return parts.map((p) => {
+    const i = p.indexOf("=");
+    return { key: (i >= 0 ? p.slice(0, i) : "").trim(), val: (i >= 0 ? p.slice(i + 1) : p).trim() };
+  }).filter((p) => p.val);
+}
+
 function renderCert(res) {
   if (res.status === "empty" || !res.certificates || !res.certificates.length) {
     showCertModal(`<p class="hint">No certificate found. The capture may be partial,
       the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`);
     return;
   }
-  const certRow = (k, v) =>
-    `<div class="detail-row"><span class="k">${k}</span><span class="v">${escapeHtml(v)}</span></div>`;
+  const row = (k, v) =>
+    v ? `<div class="detail-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(v)}</span></div>` : "";
+  const dnRows = (dn) => {
+    const rows = parseDN(dn).map((p) => row(dnLabel(p.key), p.val)).join("");
+    return rows || row("Raw", dn);
+  };
   showCertModal(
     `<p class="hint">Backend: ${escapeHtml(res.backend)}</p>` +
     res.certificates
       .map((c) =>
-        certRow("Subject", c.subject) + certRow("Issuer", c.issuer) +
-        certRow("Valid from", c.not_before) + certRow("Valid to", c.not_after) +
-        certRow("Serial", c.serial))
+        `<h4>Subject</h4>${dnRows(c.subject)}` +
+        `<h4>Issuer</h4>${dnRows(c.issuer)}` +
+        `<h4>Validity &amp; serial</h4>` +
+        row("Valid from", c.not_before) + row("Valid to", c.not_after) +
+        row("Serial number", c.serial))
       .join(`<hr class="cert-sep"/>`));
 }
 
@@ -652,10 +700,9 @@ document.getElementById("cert-file").addEventListener("change", async (e) => {
   }
 });
 
+// Persistent: it only closes via the × button (clicking the backdrop won't
+// dismiss it), so the certificate stays up while you read it.
 document.getElementById("cert-modal-close").onclick = closeCertModal;
-document.getElementById("cert-modal").addEventListener("click", (e) => {
-  if (e.target.id === "cert-modal") closeCertModal();   // click backdrop to close
-});
 
 /* --------------------------------------------------------------- wiring up */
 async function openNode(id) {
@@ -1061,7 +1108,10 @@ function applyPrefs() {
   THEMES.forEach((t) => el.classList.remove("theme-" + t));
   el.classList.add("theme-" + prefs.theme);
   el.style.setProperty("--font", FONTS[prefs.font]);
-  el.style.setProperty("--fs", prefs.size + "px");
+  // Zoom the whole document so the size setting scales EVERYTHING — text,
+  // buttons, inputs, spacing — not just text. 14px is the design baseline.
+  el.style.zoom = (prefs.size / 14).toFixed(4);
+  if (typeof cy !== "undefined") requestAnimationFrame(() => cy.resize());
 }
 
 function savePrefs() {

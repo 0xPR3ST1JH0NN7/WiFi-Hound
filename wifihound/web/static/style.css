@@ -50,7 +50,7 @@ html, body {
   color: var(--text);
   font-family: var(--font);
 }
-body { font-size: var(--fs, 14px); }
+body { font-size: 14px; }   /* design baseline; the size setting zooms the whole UI */
 
 .hidden { display: none !important; }
 
@@ -365,7 +365,8 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
   margin: 16px 0; padding: 10px 12px; border-radius: 8px; font-size: 12px;
   background: rgba(255,93,108,.1); border: 1px solid rgba(255,93,108,.4); color: #ffb3ba;
 }
-.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.modal-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  margin-top: 20px; }
 .modal-actions .btn + .btn { margin-top: 0; }   /* keep buttons aligned, not stacked */
 
 /* ------------------------------------------------------------------ toast */

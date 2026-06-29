@@ -886,7 +886,7 @@ function recomputeUnassoc() {
 // The airodump option controls — locked while a capture is running, since
 // changing them mid-capture is meaningless.
 const AIRODUMP_OPT_IDS = ["live-iface", "live-iface-refresh", "live-band",
-  "live-save", "live-channel", "live-encrypt", "live-wps", "live-essid",
+  "live-save", "live-channel", "live-encrypt", "live-essid",
   "live-bssid", "live-interval"];
 
 function setDisabled(ids, disabled) {
@@ -933,12 +933,29 @@ function setLiveUI(running) {
   refreshLiveButtons();
 }
 
+// Where to drop freshly discovered nodes: the middle of the current graph, or
+// the viewport centre when it is still empty.
+function liveSpawnCenter() {
+  const nodes = cy.nodes(":visible");
+  const box = nodes.nonempty() ? nodes.boundingBox() : cy.extent();
+  return { x: (box.x1 + box.x2) / 2, y: (box.y1 + box.y2) / 2 };
+}
+
 function applyPatch(p) {
+  const spawn = liveSpawnCenter();
   cy.batch(() => {
     (p.remove || []).forEach((id) => cy.remove(cy.getElementById(id)));
     (p.add || []).forEach((el) => {
       const added = cy.add(el);
-      if (el.group === "nodes") added.addClass("fresh");
+      if (el.group === "nodes") {
+        added.addClass("fresh");
+        // Seed a spread-out position so new nodes read as a graph straight away
+        // instead of stacking on one spot until fcose runs a moment later.
+        added.position({
+          x: spawn.x + (Math.random() - 0.5) * 460,
+          y: spawn.y + (Math.random() - 0.5) * 340,
+        });
+      }
     });
     (p.update || []).forEach((data) => {
       const ele = cy.getElementById(data.id);
@@ -966,7 +983,7 @@ function scheduleLiveLayout() {
       if (!live.fitDone) { fitGraph(); live.fitDone = true; }
     });
     l.run();
-  }, 700);
+  }, 400);
 }
 
 function handleLiveMessage(msg) {
@@ -1043,7 +1060,6 @@ async function startLive() {
     band: document.getElementById("live-band").value || null,
     interval,
     encrypt: document.getElementById("live-encrypt").value || null,
-    wps: document.getElementById("live-wps").checked,
     essid: document.getElementById("live-essid").value.trim() || null,
     bssid: document.getElementById("live-bssid").value.trim() || null,
     save: document.getElementById("live-save").checked,
@@ -1087,6 +1103,14 @@ async function startReplay() {
 
 async function stopLive(opts = {}) {
   const wasReplay = live.mode === "replay";
+  // Teardown (killing airodump, restoring the interface) takes a couple of
+  // seconds, so show a spinner on the button right away. setLiveUI(false) below
+  // rewrites the button text and clears it.
+  const btn = document.getElementById(wasReplay ? "replay-toggle" : "live-toggle");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Stopping…';
+  }
   let saved = null;
   try {
     const res = await API.liveStop();

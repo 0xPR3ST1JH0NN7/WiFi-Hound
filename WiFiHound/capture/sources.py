@@ -90,21 +90,20 @@ class AirodumpSource(Source):
 
     Capture can be narrowed with the usual airodump-ng filters: a fixed channel
     (``-c``), a band (``--band`` for 2.4 GHz / 5 GHz / both), encryption suite
-    (``--encrypt``), WPS info (``--wps``), and a specific ESSID (``--essid``) or
-    BSSID (``--bssid``). When ``save`` is set the capture files are kept under
-    ``./captures`` instead of being discarded on stop.
+    (``--encrypt``), and a specific ESSID (``--essid``) or BSSID (``--bssid``).
+    When ``save`` is set the capture files are kept under ``./captures`` instead
+    of being discarded on stop.
     """
 
     def __init__(self, interface: str, channel: Optional[str] = None,
                  band: Optional[str] = None, encrypt: Optional[str] = None,
-                 wps: bool = False, essid: Optional[str] = None,
+                 essid: Optional[str] = None,
                  bssid: Optional[str] = None,
                  monitor: Optional[MonitorHandle] = None, save: bool = False):
         self.interface = interface
         self.channel = channel
         self.band = band             # "2.4" | "5" | "both"
         self.encrypt = encrypt        # WEP | WPA2 | WPA3 | OPN ...
-        self.wps = wps
         self.essid = essid
         self.bssid = bssid
         self.save = save
@@ -127,8 +126,6 @@ class AirodumpSource(Source):
             cmd += ["--band", _BAND_FLAGS[self.band]]
         if self.encrypt:
             cmd += ["--encrypt", str(self.encrypt)]
-        if self.wps:
-            cmd += ["--wps"]
         if self.bssid:
             cmd += ["--bssid", str(self.bssid)]
         if self.essid:

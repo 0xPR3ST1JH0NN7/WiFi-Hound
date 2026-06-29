@@ -137,6 +137,11 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 .btn:disabled, .btn[disabled] { opacity: .45; cursor: not-allowed; }
 .btn:disabled:active { transform: none; }
 .sidebar select:disabled, .sidebar input:disabled { opacity: .5; cursor: not-allowed; }
+/* Inline spinner, e.g. on a button while a capture is shutting down. */
+.spinner { display: inline-block; width: 12px; height: 12px; vertical-align: -2px;
+  margin-right: 7px; border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ----------------------------------------------------------------- layout */
 .layout { display: flex; height: calc(100% - 60px); }

@@ -21,8 +21,10 @@ from __future__ import annotations
 import argparse
 import os
 import signal
+import socket
 import sys
 import threading
+import time
 import webbrowser
 from pathlib import Path
 
@@ -71,6 +73,29 @@ def _install_stdin_quit() -> None:
     threading.Thread(target=_watch, daemon=True).start()
 
 
+def _open_browser_when_ready(host: str, port: int, url: str) -> None:
+    """Open the browser only once the server actually accepts connections.
+
+    Opening it before uvicorn binds the port shows a 'connection refused' page;
+    wait (a few seconds at most) for the port to come up in a daemon thread.
+    """
+    connect_host = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+
+    def _wait() -> None:
+        for _ in range(150):  # ~30s ceiling, then open regardless
+            try:
+                with socket.create_connection((connect_host, port), timeout=0.5):
+                    break
+            except OSError:
+                time.sleep(0.2)
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    threading.Thread(target=_wait, daemon=True).start()
+
+
 def _serve(args: argparse.Namespace) -> int:
     print_banner()
 
@@ -106,10 +131,7 @@ def _serve(args: argparse.Namespace) -> int:
         _install_stdin_quit()
 
     if not args.no_browser:
-        try:
-            webbrowser.open(url)
-        except Exception:
-            pass
+        _open_browser_when_ready(args.host, args.port, url)
 
     # Quiet by default: hide per-request access logs and framework chatter.
     # --debug brings them all back.

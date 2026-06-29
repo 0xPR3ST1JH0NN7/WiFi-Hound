@@ -292,7 +292,6 @@ class LiveStartRequest(BaseModel):
     channel: str | None = None      # fixed channel; required to allow deauth
     band: str | None = None         # "2.4" | "5" | "both" (ignored if channel set)
     encrypt: str | None = None      # WEP | WPA2 | WPA3 | OPN ...
-    wps: bool = False               # show WPS info (--wps)
     essid: str | None = None        # capture one ESSID only
     bssid: str | None = None        # capture one BSSID only
     interval: float | None = None
@@ -343,7 +342,7 @@ async def live_start(req: LiveStartRequest):
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         source = AirodumpSource(
             monitor.interface, channel=req.channel, band=req.band,
-            encrypt=req.encrypt, wps=req.wps, essid=req.essid, bssid=req.bssid,
+            encrypt=req.encrypt, essid=req.essid, bssid=req.bssid,
             monitor=monitor, save=req.save,
         )
         # Watch the live pcap for WPA handshakes (e.g. captured during a deauth).

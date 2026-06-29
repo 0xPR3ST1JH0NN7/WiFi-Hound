@@ -13,8 +13,8 @@ capture and watch the map build in real time.
 * Offline vendor lookup from the OUI database.
 * Two ways to build the map: replay an imported capture, or live capture a real
   `airodump-ng` stream.
-* WPA2-Enterprise: flag 802.1X APs, inspect the RADIUS certificate, and
-  enumerate the EAP methods a network accepts.
+* WPA2-Enterprise: flag 802.1X APs, inspect and export the RADIUS certificate
+  (`.txt` / PNG), and enumerate the EAP methods a network accepts.
 
 ## Install
 
@@ -37,12 +37,10 @@ missing**:
 | --- | --- | --- |
 | `aircrack-ng`, `airmon-ng`, `airodump-ng`, `aireplay-ng` | the aircrack-ng suite — live capture, monitor mode, deauth | ✅ |
 | `tshark` | handshake detection + RADIUS certificate extraction | ✅ |
-| `wpa_supplicant` | EAP method enumeration | optional |
-| `pcapFilter.sh` | faster RADIUS cert extraction (falls back to `tshark`) | optional |
 | `EAP_buster.sh` | EAP method enumeration (path via `WIFIHOUND_EAP_BUSTER`) | optional |
 
 ```bash
-sudo apt install aircrack-ng tshark wpasupplicant
+sudo apt install aircrack-ng tshark
 ```
 
 Pass `--skip-checks` to bypass the gate for offline-only use (importing and
@@ -58,6 +56,10 @@ python3 -m wifihound stop   # stop a running server gracefully (no Ctrl+C)
 
 Click **Import capture** and pick an `airodump-ng` CSV
 (`airodump-ng -w scan --output-format csv wlan0mon`).
+
+Without `sudo` the app runs in offline mode (import, replay and RADIUS
+certificate upload); the **Live capture** panel is hidden, since live radio
+capture and deauth need root. Start with `sudo` to unlock them.
 
 ## Replay
 
@@ -77,7 +79,36 @@ channel, protocol, WPS and an ESSID or BSSID filter.
 
 ![Live capture in action](docs/live-capture.gif)
 
+Once a capture starts its options lock (interface, band, channel, filters…),
+since changing them mid-run is meaningless; they unlock again when you stop.
+
 > Use WiFiHound only on networks you own or are authorized to test.
+
+## WPA2-Enterprise (802.1X)
+
+Enterprise APs are flagged with a purple **802.1X Enterprise** badge. Click one
+to open its details panel.
+
+**RADIUS certificate.** Inspect the RADIUS server certificate's subject, issuer,
+validity and serial. This works fully offline: open the **RADIUS certificate**
+panel in the sidebar and upload a `.cap` / `.pcap` (no root). From the result you
+can **export** the certificate as a `.txt` file, copy it as text, or **save it as
+a PNG** image. During a live capture you can also inspect the certificate of a
+selected enterprise AP directly.
+
+**EAP method enumeration.** During a live capture, an enterprise AP's details
+panel offers **Enumerate EAP methods…**. It runs the external
+[`EAP_buster.sh`](https://github.com/blackarrowsec/EAP_buster), which performs
+*real* 802.1X authentication attempts to find which EAP methods (EAP-TLS,
+PEAP-MSCHAPv2, TTLS-PAP, …) the network accepts. It needs root, a legitimate EAP
+identity (e.g. `DOMAIN\user`) and a free interface (the script switches it to
+managed mode itself), and runs for several minutes.
+
+`EAP_buster.sh` is not bundled — put it on your `PATH`, or point WiFiHound at it:
+
+```bash
+export WIFIHOUND_EAP_BUSTER=/path/to/EAP_buster.sh
+```
 
 ## Authors
 

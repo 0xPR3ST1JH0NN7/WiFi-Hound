@@ -133,6 +133,10 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 .btn.danger { background: var(--danger); border: none; color: #2a0509; font-weight: 600; }
 .btn + .btn { margin-top: 8px; }
 .sidebar .btn { width: 100%; }
+/* A running capture locks its own options — disabled controls read as inert. */
+.btn:disabled, .btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn:disabled:active { transform: none; }
+.sidebar select:disabled, .sidebar input:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------- layout */
 .layout { display: flex; height: calc(100% - 60px); }
@@ -149,11 +153,23 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 }
 .panel { margin-bottom: 18px; }
 .panel h2 {
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--muted);
+  color: var(--text);
   margin: 0 0 12px;
+}
+
+/* Panel / section headers read as distinct bars — a boxed rectangle with an
+   accent edge — so a tool's title stands apart from the option rows inside it
+   instead of blending in once the panel is opened. */
+.sidebar > .panel > h2,
+details.panel > summary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 9px 11px;
 }
 
 /* Collapsible panels (native disclosure widgets) keep the sidebar tidy. */
@@ -164,9 +180,14 @@ details.panel > summary {
   align-items: center;
   user-select: none;
   margin-bottom: 12px;
+  transition: border-color .15s, background .15s;
 }
+details.panel > summary:hover { border-color: var(--accent); background: var(--panel-2); }
 details.panel > summary::-webkit-details-marker { display: none; }
-details.panel > summary h2 { margin: 0; flex: 1; }
+details.panel > summary h2 {
+  margin: 0; flex: 1; border: none; background: none; padding: 0;
+  display: flex; align-items: center;
+}
 details.panel > summary::after {
   content: "›";
   color: var(--muted);
@@ -325,6 +346,12 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 #enterprise-result h4, #cert-modal-body h4 { margin: 14px 0 6px; font-size: 14px; }
 #enterprise-result code, #cert-modal-body code { word-break: break-all; }
 .cert-sep { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+/* Certificate glyph beside the RADIUS certificate title (sidebar + modal). */
+.cert-ico { color: var(--accent); vertical-align: -2px; margin-right: 7px; flex-shrink: 0; }
+/* Export row beneath a rendered certificate (.txt / image / copy). */
+.cert-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 2px;
+  border-top: 1px solid var(--border); padding-top: 14px; }
+.cert-actions .btn { flex: 1 1 110px; margin-top: 0; }
 .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0;
   border-bottom: 1px solid var(--border); }
 .detail-row .k { color: var(--muted); }

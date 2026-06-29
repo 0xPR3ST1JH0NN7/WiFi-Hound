@@ -309,11 +309,14 @@ function showDetails(info) {
   // pointless on a static import or replay — only offer them during a live
   // airodump session (deauth additionally needs a fixed channel).
   const liveActive = live.running && live.mode === "airodump";
+  // Offer deauth during any live airodump capture (the modal explains, and
+  // gates on, the fixed-channel requirement). A client can only be deauthed
+  // off the AP it is associated with.
   let offBtn = "";
-  if (live.canDeauth && isAp) {
+  if (liveActive && isAp) {
     offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth this AP…</button>`;
-  } else if (live.canDeauth && clientAssociated) {
-    offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth from AP…</button>`;
+  } else if (liveActive && clientAssociated) {
+    offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth this client…</button>`;
   }
 
   // Enterprise (802.1X) badge is informational; its actions need a live capture.
@@ -620,12 +623,17 @@ function parseDN(dn) {
   }).filter((p) => p.val);
 }
 
+// The most recently rendered certificate, kept so it can be exported.
+let lastCert = null;
+
 function renderCert(res) {
   if (res.status === "empty" || !res.certificates || !res.certificates.length) {
+    lastCert = null;
     showCertModal(`<p class="hint">No certificate found. The capture may be partial,
       the AP isn't EAP-TLS in cleartext, or TLS 1.3 encrypted it.</p>`);
     return;
   }
+  lastCert = res;
   const row = (k, v) =>
     v ? `<div class="detail-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(v)}</span></div>` : "";
   const dnRows = (dn) => {
@@ -633,7 +641,6 @@ function renderCert(res) {
     return rows || row("Raw", dn);
   };
   showCertModal(
-    `<p class="hint">Backend: ${escapeHtml(res.backend)}</p>` +
     res.certificates
       .map((c) =>
         `<h4>Subject</h4>${dnRows(c.subject)}` +
@@ -641,7 +648,103 @@ function renderCert(res) {
         `<h4>Validity &amp; serial</h4>` +
         row("Valid from", c.not_before) + row("Valid to", c.not_after) +
         row("Serial number", c.serial))
-      .join(`<hr class="cert-sep"/>`));
+      .join(`<hr class="cert-sep"/>`) +
+    `<div class="cert-actions">
+       <button class="btn" id="cert-copy">Copy text</button>
+       <button class="btn" id="cert-txt">Export .txt</button>
+       <button class="btn" id="cert-img">Save image</button>
+     </div>`);
+  document.getElementById("cert-copy").onclick = () => copyText(certToText(lastCert));
+  document.getElementById("cert-txt").onclick = () => exportCertTxt(lastCert);
+  document.getElementById("cert-img").onclick = () => exportCertImage(lastCert);
+}
+
+/* ------------------------------------------------- certificate export */
+// A timestamped base filename so successive exports don't collide.
+function certFileBase() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `radius-cert-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+         `-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+
+// Flatten a certificate result into plain, copy-pasteable text.
+function certToText(res) {
+  if (!res) return "";
+  const lines = ["RADIUS certificate", "=".repeat(42)];
+  const dnLines = (dn) => {
+    const parts = parseDN(dn);
+    return parts.length
+      ? parts.map((p) => `  ${dnLabel(p.key)}: ${p.val}`)
+      : [`  ${dn || "(none)"}`];
+  };
+  (res.certificates || []).forEach((c, i) => {
+    if (i) lines.push("", "-".repeat(42));
+    lines.push("Subject:", ...dnLines(c.subject));
+    lines.push("Issuer:", ...dnLines(c.issuer));
+    lines.push("Validity & serial:");
+    if (c.not_before) lines.push(`  Valid from: ${c.not_before}`);
+    if (c.not_after) lines.push(`  Valid to: ${c.not_after}`);
+    if (c.serial) lines.push(`  Serial number: ${c.serial}`);
+  });
+  return lines.join("\n");
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportCertTxt(res) {
+  if (!res) return;
+  downloadBlob(new Blob([certToText(res)], { type: "text/plain;charset=utf-8" }),
+               certFileBase() + ".txt");
+  toast("Certificate exported (.txt)", "ok");
+}
+
+// Draw the certificate text onto a canvas and save it as a PNG. Rendering the
+// text ourselves keeps the canvas untainted — no external capture library.
+function exportCertImage(res) {
+  if (!res) return;
+  const lines = certToText(res).split("\n");
+  const css = getComputedStyle(document.documentElement);
+  const pick = (name, fallback) => (css.getPropertyValue(name) || fallback).trim();
+  const bg = pick("--panel-2", "#140e0e");
+  const fg = pick("--text", "#f5eaea");
+  const accent = pick("--accent", "#ff2a2a");
+  const scale = window.devicePixelRatio || 2;
+  const pad = 24, lineH = 22, fontPx = 14;
+  const font = `${fontPx}px ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace`;
+  const measure = document.createElement("canvas").getContext("2d");
+  measure.font = font;
+  let maxW = 0;
+  lines.forEach((l) => { maxW = Math.max(maxW, measure.measureText(l).width); });
+  const w = Math.ceil(maxW + pad * 2);
+  const h = Math.ceil(lines.length * lineH + pad * 2);
+  const canvas = document.createElement("canvas");
+  canvas.width = w * scale;
+  canvas.height = h * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+  ctx.font = font;
+  ctx.textBaseline = "top";
+  lines.forEach((l, i) => {
+    ctx.fillStyle = i === 0 ? accent : fg;
+    ctx.fillText(l, pad, pad + i * lineH);
+  });
+  canvas.toBlob((blob) => {
+    if (!blob) return toast("Could not render certificate image", "error");
+    downloadBlob(blob, certFileBase() + ".png");
+    toast("Certificate image saved", "ok");
+  }, "image/png");
 }
 
 function renderEap(res, dry) {
@@ -746,6 +849,17 @@ document.querySelectorAll(".legend-toggle").forEach((btn) =>
   btn.addEventListener("click", () => { btn.classList.toggle("off"); applyFilters(); })
 );
 
+// Sidebar feature panels behave as an accordion: opening one collapses the
+// others, so a single tool is expanded at a time. (Closing a panel never
+// re-triggers this, so there is no toggle loop.)
+const sidebarPanels = Array.from(document.querySelectorAll(".sidebar details.panel"));
+sidebarPanels.forEach((d) =>
+  d.addEventListener("toggle", () => {
+    if (!d.open) return;
+    sidebarPanels.forEach((other) => { if (other !== d && other.open) other.open = false; });
+  })
+);
+
 /* ------------------------------------------------------------- live capture */
 const live = { ws: null, running: false, fitDone: false, layoutTimer: null,
                mode: null, channel: null, canDeauth: false, loaded: false };
@@ -760,25 +874,49 @@ function recomputeUnassoc() {
 // Two ways to drive the live graph share one capture session: airodump (real
 // radio, needs root) and replay (offline reveal of an imported capture). Only
 // one runs at a time; reflect that on both panels' buttons.
+// The airodump option controls — locked while a capture is running, since
+// changing them mid-capture is meaningless.
+const AIRODUMP_OPT_IDS = ["live-iface", "live-iface-refresh", "live-band",
+  "live-save", "live-channel", "live-encrypt", "live-wps", "live-essid",
+  "live-bssid", "live-interval"];
+
+function setDisabled(ids, disabled) {
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = disabled;
+  });
+}
+
 function refreshLiveButtons() {
   const running = live.running, mode = live.mode;
+  const capturing = running && mode === "airodump";
   const air = document.getElementById("live-toggle");
-  air.textContent = running && mode === "airodump" ? "Stop live" : "Start live";
-  air.classList.toggle("danger", running && mode === "airodump");
+  // Dark like Replay when idle; turns red (danger) once a capture is running.
+  air.textContent = capturing ? "Stop live capture" : "Start live capture";
+  air.classList.toggle("danger", capturing);
   air.disabled = !OFFENSIVE || (running && mode !== "airodump");
-  document.getElementById("live-dot").classList.toggle("on", running && mode === "airodump");
+  document.getElementById("live-dot").classList.toggle("on", capturing);
+  // Lock the capture options for the duration of a live capture.
+  setDisabled(AIRODUMP_OPT_IDS, capturing);
 
   const rep = document.getElementById("replay-toggle");
   const replaying = running && mode === "replay";
   rep.textContent = replaying ? "Stop replay" : "Replay capture";
   rep.classList.toggle("danger", replaying);
   rep.disabled = (running && mode !== "replay") || (!running && !live.loaded);
+  setDisabled(["replay-interval"], replaying);
   document.getElementById("replay-dot").classList.toggle("on", replaying);
   document.getElementById("replay-hint").textContent = replaying
     ? "Revealing the capture… press Stop to halt."
     : live.loaded
     ? "Replays the loaded capture node by node."
     : "Import a capture first, then replay it.";
+
+  // Encryption / channel filters only carry meaning for an imported capture or
+  // its replay — a live airodump session doesn't populate them, so hide them
+  // while one is running (the Layout filter stays available).
+  const repFilters = document.getElementById("replay-filters");
+  if (repFilters) repFilters.classList.toggle("hidden", capturing);
 }
 
 function setLiveUI(running) {

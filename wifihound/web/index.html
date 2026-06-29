@@ -57,7 +57,6 @@
                         title="Rescan interfaces">↻</button>
               </span>
             </label>
-            <button class="btn primary" id="live-toggle">Start live</button>
             <label class="filter-row">Band
               <select id="live-band">
                 <option value="2.4">2.4 GHz</option>
@@ -94,6 +93,7 @@
                 </label>
               </div>
             </details>
+            <button class="btn" id="live-toggle">Start live capture</button>
           </div>
         </div>
       </details>
@@ -111,7 +111,11 @@
       </details>
 
       <details class="panel">
-        <summary><h2>RADIUS certificate</h2></summary>
+        <summary><h2><svg class="cert-ico" viewBox="0 0 24 24" width="14" height="14"
+            aria-hidden="true" focusable="false"><circle cx="12" cy="9" r="6" fill="none"
+            stroke="currentColor" stroke-width="2"/><path d="M8.5 14l-1.5 7 5-3 5 3-1.5-7"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle
+            cx="12" cy="9" r="2.2" fill="currentColor"/></svg>RADIUS certificate</h2></summary>
         <div class="panel-body">
           <p class="hint">Read the RADIUS server certificate from an enterprise
             <code>.cap</code> / <code>.pcap</code>. Offline, no root.</p>
@@ -135,12 +139,14 @@
         <button type="button" class="legend-toggle" id="lt-unassoc" data-filter="unassoc">
           <span class="dot client-un"></span> Unassociated</button>
         <div class="legend-filters">
-          <label class="filter-row">Encryption
-            <select id="filter-enc"><option value="">all</option></select>
-          </label>
-          <label class="filter-row">Channel
-            <select id="filter-chan"><option value="">all</option></select>
-          </label>
+          <div id="replay-filters">
+            <label class="filter-row">Encryption
+              <select id="filter-enc"><option value="">all</option></select>
+            </label>
+            <label class="filter-row">Channel
+              <select id="filter-chan"><option value="">all</option></select>
+            </label>
+          </div>
           <label class="filter-row">Layout
             <select id="layout-select">
               <option value="fcose">force (fcose)</option>
@@ -230,7 +236,11 @@
   <div id="cert-modal" class="modal hidden">
     <div class="modal-card cert-card">
       <button class="details-close" id="cert-modal-close" aria-label="Close">&times;</button>
-      <h3>RADIUS certificate</h3>
+      <h3><svg class="cert-ico" viewBox="0 0 24 24" width="16" height="16"
+          aria-hidden="true" focusable="false"><circle cx="12" cy="9" r="6" fill="none"
+          stroke="currentColor" stroke-width="2"/><path d="M8.5 14l-1.5 7 5-3 5 3-1.5-7"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle
+          cx="12" cy="9" r="2.2" fill="currentColor"/></svg>RADIUS certificate</h3>
       <div id="cert-modal-body"></div>
     </div>
   </div>

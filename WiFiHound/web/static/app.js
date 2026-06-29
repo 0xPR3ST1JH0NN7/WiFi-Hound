@@ -288,6 +288,10 @@ function showDetails(info) {
     row("Encryption", info.privacy);
     row("Cipher", info.cipher);
     row("Auth", info.authentication);
+    if (info.wps) {
+      row("WPS", info.wps_version ? `Yes (v${info.wps_version})` : "Yes");
+      row("WPS locked", info.wps_locked ? "Yes" : "No");
+    }
     row("Signal", info.power != null ? `${info.power} dBm` : null);
     row("Beacons", info.beacons);
     row("Data", info.data);
@@ -886,7 +890,7 @@ function recomputeUnassoc() {
 // The airodump option controls — locked while a capture is running, since
 // changing them mid-capture is meaningless.
 const AIRODUMP_OPT_IDS = ["live-iface", "live-iface-refresh", "live-band",
-  "live-save", "live-channel", "live-encrypt", "live-essid",
+  "live-save", "live-channel", "live-encrypt", "live-wps", "live-essid",
   "live-bssid", "live-interval"];
 
 function setDisabled(ids, disabled) {
@@ -1060,6 +1064,7 @@ async function startLive() {
     band: document.getElementById("live-band").value || null,
     interval,
     encrypt: document.getElementById("live-encrypt").value || null,
+    wps: document.getElementById("live-wps").checked,
     essid: document.getElementById("live-essid").value.trim() || null,
     bssid: document.getElementById("live-bssid").value.trim() || null,
     save: document.getElementById("live-save").checked,

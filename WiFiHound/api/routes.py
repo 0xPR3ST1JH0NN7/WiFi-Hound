@@ -24,6 +24,7 @@ from WiFiHound.capture import (
     CaptureController,
     HandshakeWatcher,
     ReplaySource,
+    WpsWatcher,
     ensure_monitor_mode,
     interface_exists,
     list_wireless_interfaces,
@@ -292,6 +293,7 @@ class LiveStartRequest(BaseModel):
     channel: str | None = None      # fixed channel; required to allow deauth
     band: str | None = None         # "2.4" | "5" | "both" (ignored if channel set)
     encrypt: str | None = None      # WEP | WPA2 | WPA3 | OPN ...
+    wps: bool = False               # detect WPS info from the live pcap
     essid: str | None = None        # capture one ESSID only
     bssid: str | None = None        # capture one BSSID only
     interval: float | None = None
@@ -347,8 +349,10 @@ async def live_start(req: LiveStartRequest):
         )
         # Watch the live pcap for WPA handshakes (e.g. captured during a deauth).
         handshakes = HandshakeWatcher(source)
-        await CAPTURE.start(source, mode=req.mode,
-                            interval=interval, handshakes=handshakes)
+        # Optionally read WPS info (version / locked) from the same pcap.
+        wps = WpsWatcher(source) if req.wps else None
+        await CAPTURE.start(source, mode=req.mode, interval=interval,
+                            handshakes=handshakes, wps=wps)
         return {"status": "running", "mode": req.mode,
                 "channel": req.channel, "interface": monitor.interface}
     else:

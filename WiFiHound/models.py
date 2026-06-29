@@ -31,6 +31,9 @@ class AccessPoint:
     first_seen: Optional[str] = None
     last_seen: Optional[str] = None
     vendor: Optional[str] = None           # resolved from OUI
+    wps: Optional[bool] = None             # WPS advertised in beacons (live only)
+    wps_version: Optional[str] = None      # "1.0" / "2.0"
+    wps_locked: Optional[bool] = None      # AP setup locked
     lat: Optional[float] = None
     lon: Optional[float] = None
 

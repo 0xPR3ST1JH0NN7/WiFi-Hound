@@ -12,6 +12,7 @@ from WiFiHound.capture.interfaces import (
     restore_managed_mode,
 )
 from WiFiHound.capture.sources import AirodumpSource, ReplaySource, Source
+from WiFiHound.capture.wps import WpsWatcher, parse_wps
 
 __all__ = [
     "CaptureController",
@@ -21,6 +22,8 @@ __all__ = [
     "AirodumpSource",
     "HandshakeWatcher",
     "parse_handshakes",
+    "WpsWatcher",
+    "parse_wps",
     "list_wireless_interfaces",
     "interface_exists",
     "interface_mode",

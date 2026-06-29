@@ -29,11 +29,31 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+WiFiHound also needs a few command-line tools on your `PATH`. On startup it
+prints a dependency checklist and **refuses to start if a required tool is
+missing**:
+
+| Tool | Used for | Required |
+| --- | --- | --- |
+| `aircrack-ng`, `airmon-ng`, `airodump-ng`, `aireplay-ng` | the aircrack-ng suite — live capture, monitor mode, deauth | ✅ |
+| `tshark` | handshake detection + RADIUS certificate extraction | ✅ |
+| `wpa_supplicant` | EAP method enumeration | optional |
+| `pcapFilter.sh` | faster RADIUS cert extraction (falls back to `tshark`) | optional |
+| `EAP_buster.sh` | EAP method enumeration (path via `WIFIHOUND_EAP_BUSTER`) | optional |
+
+```bash
+sudo apt install aircrack-ng tshark wpasupplicant
+```
+
+Pass `--skip-checks` to bypass the gate for offline-only use (importing and
+replaying captures needs no external tools).
+
 ## Run
 
 ```bash
 python3 -m wifihound        # opens http://127.0.0.1:8000
 sudo python3 -m wifihound   # also enables live radio capture
+python3 -m wifihound stop   # stop a running server gracefully (no Ctrl+C)
 ```
 
 Click **Import capture** and pick an `airodump-ng` CSV

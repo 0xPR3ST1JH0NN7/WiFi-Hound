@@ -23,7 +23,7 @@ import sys
 import webbrowser
 from pathlib import Path
 
-from wifihound import __version__
+from wifihound import __version__, preflight
 from wifihound.operations.base import offensive_available
 
 # ANSI colors, used only when writing to a real terminal.
@@ -49,14 +49,21 @@ def print_banner() -> None:
 
 
 def _serve(args: argparse.Namespace) -> int:
+    print_banner()
+
+    # Verify every required tool and library is present before doing anything.
+    # A missing requirement aborts the launch unless explicitly skipped.
+    if args.skip_checks:
+        print(_paint("[*] dependency check skipped (--skip-checks).", _DIM))
+    elif not preflight.run():
+        return 1
+
     try:
         import uvicorn
     except ImportError:
         print("[!] uvicorn is not installed. Run: pip install -r requirements.txt",
               file=sys.stderr)
         return 1
-
-    print_banner()
 
     if offensive_available():
         print(_paint("[*] root: live radio capture and deauth are available.", _DIM))
@@ -121,6 +128,8 @@ def _add_serve_flags(p: argparse.ArgumentParser) -> None:
                    help="Auto-reload on code changes (development).")
     p.add_argument("--debug", action="store_true",
                    help="Verbose logging: framework and per-request logs.")
+    p.add_argument("--skip-checks", action="store_true",
+                   help="Skip the startup dependency check (offline-only use).")
 
 
 def build_parser() -> argparse.ArgumentParser:

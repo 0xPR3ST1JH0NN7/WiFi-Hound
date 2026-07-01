@@ -1023,6 +1023,32 @@ function setDisabled(ids, disabled) {
   });
 }
 
+// Which channels each band actually uses, so the picker only offers real ones
+// (2.4 GHz: 1-14; 5 GHz: the UNII channels). "both" offers every channel; an
+// empty value means "any" — airodump hops the whole band.
+const CHANNELS_24 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+const CHANNELS_5 = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116,
+  120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165];
+
+function channelsForBand(band) {
+  if (band === "2.4") return CHANNELS_24;
+  if (band === "5") return CHANNELS_5;
+  return [...CHANNELS_24, ...CHANNELS_5];
+}
+
+// Rebuild the channel picker for the selected band, keeping the current pick if
+// it still belongs to that band (otherwise fall back to "any").
+function populateChannelOptions() {
+  const bandSel = document.getElementById("live-band");
+  const chanSel = document.getElementById("live-channel");
+  if (!bandSel || !chanSel) return;
+  const prev = chanSel.value;
+  const list = channelsForBand(bandSel.value);
+  chanSel.innerHTML = '<option value="">any</option>' +
+    list.map((c) => `<option value="${c}">${c}</option>`).join("");
+  chanSel.value = list.includes(Number(prev)) ? prev : "";
+}
+
 function refreshLiveButtons() {
   const running = live.running, mode = live.mode;
   const capturing = running && mode === "airodump";
@@ -1037,16 +1063,23 @@ function refreshLiveButtons() {
 
   const rep = document.getElementById("replay-toggle");
   const replaying = running && mode === "replay";
-  rep.textContent = replaying ? "Stop replay" : "Replay capture";
+  // With no capture loaded the button imports one; once a capture exists it
+  // replays it; while replaying it stops. "primary" only in the import state,
+  // to flag it as the way in.
+  const importMode = !replaying && !live.loaded;
+  rep.textContent = replaying ? "Stop replay" : importMode ? "Import capture" : "Replay capture";
   rep.classList.toggle("danger", replaying);
-  rep.disabled = (running && mode !== "replay") || (!running && !live.loaded);
+  rep.classList.toggle("primary", importMode);
+  // Locked only while a live airodump capture owns the session; importing or
+  // replaying is otherwise always available.
+  rep.disabled = capturing;
   setDisabled(["replay-interval"], replaying);
   document.getElementById("replay-dot").classList.toggle("on", replaying);
   document.getElementById("replay-hint").textContent = replaying
     ? "Revealing the capture… press Stop to halt."
     : live.loaded
     ? "Replays the loaded capture node by node."
-    : "Import a capture first, then replay it.";
+    : "Import an airodump CSV to enable replay.";
 
   // Encryption / channel filters only carry meaning for an imported capture or
   // its replay — a live airodump session doesn't populate them, so hide them
@@ -1200,6 +1233,7 @@ async function startLive() {
     save: document.getElementById("live-save").checked,
     acknowledged: true,
   };
+  closeDetails();   // a fresh scan: drop any stale node details from the last one
   try {
     live.fitDone = false;
     const res = await API.liveStart(payload);
@@ -1221,6 +1255,7 @@ async function startLive() {
 // Replay: re-feed the imported capture progressively. Offline, no root.
 async function startReplay() {
   if (!live.loaded) return toast("Import a capture first", "error");
+  closeDetails();   // a fresh replay: drop any stale node details from the last one
   const interval = Number(document.getElementById("replay-interval").value) || 1.2;
   try {
     live.fitDone = false;
@@ -1267,8 +1302,15 @@ async function stopLive(opts = {}) {
 document.getElementById("live-toggle").onclick = () =>
   live.running && live.mode === "airodump" ? stopLive() : startLive();
 
-document.getElementById("replay-toggle").onclick = () =>
-  live.running && live.mode === "replay" ? stopLive() : startReplay();
+document.getElementById("replay-toggle").onclick = () => {
+  if (live.running && live.mode === "replay") return stopLive();
+  // No capture yet → this button doubles as the import entry point.
+  if (!live.loaded) return document.getElementById("file-input").click();
+  return startReplay();
+};
+
+document.getElementById("live-band").addEventListener("change", populateChannelOptions);
+populateChannelOptions();   // seed the channel picker for the default band
 
 document.getElementById("live-iface-refresh").onclick = () => loadInterfaces();
 
@@ -1406,6 +1448,8 @@ function syncSettingsForm() {
   document.getElementById("set-theme").value = prefs.theme;
   document.getElementById("set-font").value = prefs.font;
   document.getElementById("set-size").value = prefs.size;
+  const sv = document.getElementById("set-size-val");
+  if (sv) sv.textContent = prefs.size;
 }
 
 loadPrefs();
@@ -1427,11 +1471,10 @@ document.getElementById("set-font").onchange = (e) => {
   prefs.font = e.target.value; applyPrefs(); savePrefs();
 };
 const sizeInput = document.getElementById("set-size");
-sizeInput.oninput = (e) => {                 // live preview as you type/spin
-  prefs.size = clampSize(e.target.value); applyPrefs(); savePrefs();
-};
-sizeInput.onchange = (e) => {                 // snap the field to the clamped value
-  prefs.size = clampSize(e.target.value); e.target.value = prefs.size;
+const sizeVal = document.getElementById("set-size-val");
+sizeInput.oninput = (e) => {                 // live preview as you drag the slider
+  prefs.size = clampSize(e.target.value);
+  if (sizeVal) sizeVal.textContent = prefs.size;
   applyPrefs(); savePrefs();
 };
 document.getElementById("settings-reset").onclick = () => {

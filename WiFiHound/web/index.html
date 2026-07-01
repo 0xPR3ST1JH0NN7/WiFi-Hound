@@ -132,33 +132,39 @@
     <section class="graph-wrap">
       <div id="cy"></div>
       <div class="graph-legend hidden" id="graph-legend">
-        <div class="legend-title">Filters &amp; view</div>
-        <button type="button" class="legend-toggle" id="lt-aps" data-filter="aps">
-          <img class="legend-ico" src="/static/img/node-ap.svg?v=1" alt=""/> Access Points</button>
-        <button type="button" class="legend-toggle" id="lt-clients" data-filter="clients">
-          <img class="legend-ico" src="/static/img/node-client.svg?v=1" alt=""/> Clients</button>
-        <button type="button" class="legend-toggle" id="lt-unassoc" data-filter="unassoc">
-          <img class="legend-ico faded-ico" src="/static/img/node-client.svg?v=1" alt=""/> Unassociated</button>
-        <div class="legend-filters">
-          <div id="replay-filters">
-            <label class="filter-row">Encryption
-              <select id="filter-enc"><option value="">all</option></select>
-            </label>
-            <label class="filter-row">Channel
-              <select id="filter-chan"><option value="">all</option></select>
+        <div class="legend-header">
+          <span class="legend-title">Filters &amp; view</span>
+          <button type="button" class="legend-collapse" id="legend-collapse"
+                  title="Hide filters" aria-label="Hide filters" aria-expanded="true"></button>
+        </div>
+        <div class="legend-content" id="legend-content">
+          <button type="button" class="legend-toggle" id="lt-aps" data-filter="aps">
+            <img class="legend-ico" src="/static/img/node-ap.svg?v=1" alt=""/> Access Points</button>
+          <button type="button" class="legend-toggle" id="lt-clients" data-filter="clients">
+            <img class="legend-ico" src="/static/img/node-client.svg?v=1" alt=""/> Clients</button>
+          <button type="button" class="legend-toggle" id="lt-unassoc" data-filter="unassoc">
+            <img class="legend-ico faded-ico" src="/static/img/node-client.svg?v=1" alt=""/> Unassociated</button>
+          <div class="legend-filters">
+            <div id="replay-filters">
+              <label class="filter-row">Encryption
+                <select id="filter-enc"><option value="">all</option></select>
+              </label>
+              <label class="filter-row">Channel
+                <select id="filter-chan"><option value="">all</option></select>
+              </label>
+            </div>
+            <label class="filter-row">Layout
+              <select id="layout-select">
+                <option value="fcose">force (fcose)</option>
+                <option value="concentric">concentric</option>
+                <option value="breadthfirst">hierarchical</option>
+                <option value="circle">circle</option>
+                <option value="grid">grid</option>
+              </select>
             </label>
           </div>
-          <label class="filter-row">Layout
-            <select id="layout-select">
-              <option value="fcose">force (fcose)</option>
-              <option value="concentric">concentric</option>
-              <option value="breadthfirst">hierarchical</option>
-              <option value="circle">circle</option>
-              <option value="grid">grid</option>
-            </select>
-          </label>
+          <p class="legend-hint">Click an item to filter · click a node for details</p>
         </div>
-        <p class="legend-hint">Click an item to filter · click a node for details</p>
       </div>
       <div id="empty-state" class="empty-state">
         <div class="empty-cat">

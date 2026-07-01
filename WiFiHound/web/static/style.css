@@ -281,9 +281,25 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
   border: 1px solid var(--border); border-radius: 10px;
   padding: 10px 12px; box-shadow: var(--shadow);
   font-size: 13px; width: 232px; max-height: calc(100% - 24px); overflow-y: auto;
+  transition: opacity .45s ease;
 }
+/* Auto-dim: once the pointer has been away for a while the overlay fades so it
+   stops covering the graph; hovering it (JS also clears the class) restores it. */
+.graph-legend.dimmed { opacity: .14; }
+.graph-legend.dimmed:hover { opacity: 1; }
+/* Collapsed: fold down to just the header chip so it takes minimal space. */
+.graph-legend.collapsed { width: auto; }
+.graph-legend.collapsed .legend-content { display: none; }
+.legend-header { display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px; }
 .legend-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-  color: var(--muted); margin-bottom: 8px; }
+  color: var(--muted); }
+.legend-collapse { background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 16px; line-height: 1; padding: 0 5px; border-radius: 6px;
+  flex-shrink: 0; }
+.legend-collapse:hover { background: var(--panel-2); color: var(--text); }
+.legend-collapse::after { content: "\2013"; }              /* en-dash: collapse */
+.graph-legend.collapsed .legend-collapse::after { content: "+"; }
 .legend-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%;
   background: none; border: none; color: var(--text); cursor: pointer;

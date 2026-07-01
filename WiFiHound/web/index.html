@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png?v=2"/>
   <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16.png?v=2"/>
   <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png?v=2"/>
-  <link rel="stylesheet" href="/static/style.css?v=2"/>
+  <link rel="stylesheet" href="/static/style.css?v=3"/>
   <script src="/static/vendor/cytoscape.min.js"></script>
   <script src="/static/vendor/layout-base.js"></script>
   <script src="/static/vendor/cose-base.js"></script>
@@ -55,13 +55,15 @@
             </label>
             <label class="filter-row">Band
               <select id="live-band">
-                <option value="2.4">2.4 GHz</option>
+                <option value="2.4" selected>2.4 GHz</option>
                 <option value="5">5 GHz</option>
-                <option value="both" selected>both</option>
+                <option value="both">both</option>
               </select>
             </label>
             <label class="filter-row">Channel
-              <input id="live-channel" class="mini-input" type="number" min="1" max="196" placeholder="e.g. 6"/>
+              <select id="live-channel" class="mini-input">
+                <option value="">any</option>
+              </select>
             </label>
             <label class="filter"><input type="checkbox" id="live-save"/> Save capture file</label>
             <details class="subpanel">
@@ -101,8 +103,8 @@
             <input id="replay-interval" class="mini-input" type="number" min="0.2" max="10"
                    step="0.1" value="1.2"/>
           </label>
-          <p class="hint" id="replay-hint">Import a capture first, then replay it.</p>
-          <button class="btn" id="replay-toggle" disabled>Replay capture</button>
+          <p class="hint" id="replay-hint">Import an airodump CSV to enable replay.</p>
+          <button class="btn primary" id="replay-toggle">Import capture</button>
         </div>
       </details>
 
@@ -238,8 +240,8 @@
         <option value="georgia">Georgia</option>
         <option value="times">Times New Roman</option>
       </select>
-      <label for="set-size">Font size (px)</label>
-      <input id="set-size" type="number" min="10" max="28" step="1" value="14"/>
+      <label for="set-size">Font size (<span id="set-size-val">14</span> px)</label>
+      <input id="set-size" class="range-input" type="range" min="10" max="28" step="1" value="14"/>
       <div class="modal-actions">
         <button class="btn ghost" id="settings-reset">Reset</button>
         <button class="btn primary" id="settings-done">Done</button>
@@ -262,6 +264,6 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <script src="/static/app.js?v=2"></script>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>

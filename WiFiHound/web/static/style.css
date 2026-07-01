@@ -421,6 +421,13 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
   border: 1px solid var(--border); background: var(--panel); color: var(--text);
 }
 .modal-card select:focus, .modal-card input:focus { outline: none; border-color: var(--accent); }
+/* Font-size slider in Appearance: replaces the tiny number spinner with a full
+   accent-coloured track — no fiddly step arrows. */
+.range-input {
+  padding: 0; border: none; background: none;
+  accent-color: var(--accent); height: 24px; cursor: pointer;
+}
+.range-input:focus { outline: none; }
 .op-warn {
   margin: 16px 0; padding: 10px 12px; border-radius: 8px; font-size: 12px;
   background: rgba(255,93,108,.1); border: 1px solid rgba(255,93,108,.4); color: #ffb3ba;

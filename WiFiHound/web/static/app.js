@@ -458,6 +458,12 @@ function setView(view) {
   document.getElementById("table-view").classList.toggle("hidden", !isTable);
   document.querySelectorAll(".vt-btn").forEach((b) =>
     b.classList.toggle("active", b.dataset.view === currentView));
+  // The top search box navigates graph nodes (it focuses / zooms the canvas), so
+  // it only makes sense in graph mode; the table has its own row filter. Hide it
+  // in table view and close any open results dropdown.
+  const search = document.querySelector(".search");
+  if (search) search.classList.toggle("hidden", isTable);
+  if (isTable) hideSearch();
   // The legend is graph-only chrome; hide it while the table is up.
   const empty = cy.nodes().length === 0;
   const legend = document.getElementById("graph-legend");

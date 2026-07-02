@@ -18,6 +18,9 @@
   --client-un: #8a93a8;
   --shadow: 0 8px 30px rgba(0, 0, 0, .6);
   --font: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Scrollbar thumb: an accent-tinted pill. It references --accent/--border, so
+     it retints automatically with every palette below (no per-theme override). */
+  --scroll-thumb: color-mix(in srgb, var(--accent) 42%, var(--border));
 }
 
 /* Alternative palettes (applied by toggling a class on <html>). */
@@ -41,6 +44,24 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------- scrollbars */
+/* One themed, thin scrollbar in every scrollable area (sidebar, details panel,
+   search results, filters overlay) so it stops looking like a stock OS bar —
+   most jarring in Chrome. WebKit/Blink (Chrome, Edge, Safari, Brave, Opera) get
+   the full custom look via ::-webkit-scrollbar; Firefox uses the two standard
+   properties. Colours come from the palette, so the bar retints with the theme. */
+* { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;      /* transparent inset → thumb reads as a pill */
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-corner { background: transparent; }
 
 html, body {
   margin: 0;

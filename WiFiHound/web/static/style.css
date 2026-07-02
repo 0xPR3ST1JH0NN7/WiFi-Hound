@@ -154,7 +154,7 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
   position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 15px;                         /* keep the cat right on the key's tail */
+  gap: 30px;                         /* keep the cat right on the key's tail */
   padding: 0 6px 5px 84px;          /* ~4 dashes of road behind the cat */
 }
 .cat-run {

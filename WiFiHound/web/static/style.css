@@ -160,6 +160,15 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
   color: var(--accent);
   shape-rendering: crispedges;
   animation: cat-bob .24s steps(2) infinite;
+  pointer-events: auto; cursor: pointer;   /* clickable even though the lane isn't */
+}
+/* Click the cat and it hops: a one-shot jump that overrides the running bob,
+   then reverts to the gait when the .jump class is removed on animationend. */
+.cat-run.jump { animation: cat-jump .5s ease-out; }
+@keyframes cat-jump {
+  0% { transform: translateY(0); }
+  35%, 55% { transform: translateY(-15px); }
+  100% { transform: translateY(0); }
 }
 /* 2-frame leg swap = the classic dino gait */
 .cat-run .cat-legs-b { opacity: 0; }
@@ -207,7 +216,7 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 /* keep the toolbar usable where a running mascot would crowd it */
 @media (max-width: 720px) { .cat-runner { display: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .cat-run, .cat-run .cat-legs-a, .cat-run .cat-legs-b,
+  .cat-run, .cat-run.jump, .cat-run .cat-legs-a, .cat-run .cat-legs-b,
   .cat-key, .cat-ground, .cat-dust::before, .cat-dust::after { animation: none; }
 }
 
@@ -437,11 +446,13 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 .vt-btn.active { background: var(--accent); color: var(--btn-primary-text); font-weight: 600; }
 
 /* Node search overlay, docked on the canvas beside the view toggle (graph mode
-   only). Reuses the .search input / .search-results dropdown styles. */
+   only). Reuses the .search-results dropdown styles; sized to match the table
+   view's row filter so the two searches look identical. */
 .graph-search {
   position: absolute; top: 12px; left: 174px; z-index: 6;
-  flex: none; width: min(360px, calc(100% - 470px));
+  flex: none; width: 340px; max-width: calc(100% - 480px);
 }
+.graph-search input { padding: 8px 12px; border-radius: 8px; }
 
 /* The table overlay fills the graph area and sits above the canvas + legend. */
 .table-view {

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import signal
 import tempfile
@@ -335,9 +336,14 @@ async def live_start(req: LiveStartRequest):
         #    needed (clearing interfering processes first). Capture on whatever
         #    interface monitor mode lands on; the handle restores managed mode
         #    automatically when the capture stops.
+        #    airmon-ng (`check kill` + `start`) shells out and blocks for a couple
+        #    of seconds; run it in a thread so the event loop stays responsive
+        #    (status polls, the WebSocket, other requests) while it works.
         try:
-            monitor = ensure_monitor_mode(req.interface,
-                                          acknowledged=req.acknowledged)
+            monitor = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: ensure_monitor_mode(req.interface,
+                                            acknowledged=req.acknowledged))
         except OperationNotAuthorized as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except _OpError as exc:

@@ -483,6 +483,20 @@ document.querySelectorAll(".vt-btn").forEach((b) =>
   b.addEventListener("click", () => setView(b.dataset.view)));
 document.getElementById("table-search").addEventListener("input", renderTable);
 
+// Easter egg: click the toolbar runner cat and it hops. Re-triggering mid-hop
+// restarts the animation; the class is cleared when the jump finishes.
+const catRun = document.querySelector(".cat-run");
+if (catRun) {
+  catRun.addEventListener("click", () => {
+    catRun.classList.remove("jump");
+    void catRun.offsetWidth;   // force reflow so a repeat click restarts the hop
+    catRun.classList.add("jump");
+  });
+  catRun.addEventListener("animationend", (e) => {
+    if (e.animationName === "cat-jump") catRun.classList.remove("jump");
+  });
+}
+
 /* ----------------------------------------------------------------- details */
 function showDetails(info) {
   const body = document.getElementById("details-body");
@@ -1428,6 +1442,11 @@ async function startLive() {
     acknowledged: true,
   };
   closeDetails();   // a fresh scan: drop any stale node details from the last one
+  // Enabling monitor mode (airmon-ng) takes a couple of seconds, so show a
+  // spinner on the button right away — mirrors the "Stopping…" state on stop.
+  const btn = document.getElementById("live-toggle");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Starting…';
   try {
     live.fitDone = false;
     const res = await API.liveStart(payload);
@@ -1435,7 +1454,7 @@ async function startLive() {
     live.channel = channel;
     live.canDeauth = !!channel;
     openLiveSocket();
-    setLiveUI(true);
+    setLiveUI(true);   // rewrites the button to "Stop live capture"
     const onIface =
       res.interface && res.interface !== iface ? ` on ${res.interface}` : "";
     const extra = live.canDeauth ? ` (deauth enabled, ch ${channel})` : "";
@@ -1443,6 +1462,7 @@ async function startLive() {
     loadInterfaces(); // the adapter may now report as monitor / be renamed
   } catch (e) {
     toast(e.message, "error");
+    refreshLiveButtons();   // restore the "Start live capture" button on failure
   }
 }
 

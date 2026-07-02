@@ -130,18 +130,16 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 
 /* ---------------------------------------------------------- runner mascot */
 /* A Chrome-dino-style endless runner in the toolbar: a pixel cat chasing a
-   password key. Pure CSS/SVG (no assets), tinted from the palette. It lives in
-   the gap between the search box and the actions and grows to fill it, so the
-   cat gets a long road; the cat pins left (near search), the key pins right.
-   Decorative — hidden on narrow screens and when reduced motion is preferred. */
-/* The lane is a content-sized flex item. Its auto left margin plus a fixed
-   right margin (against the actions' own auto margin) place the cat a little
-   left of centre in the gap between the search box and the settings gear —
-   the fixed margin biases it ~half its value toward the search side. */
+   password key. Pure CSS/SVG (no assets), tinted from the palette. Decorative —
+   hidden on narrow screens and when reduced motion is preferred. */
+/* The lane is a content-sized flex item whose auto left margin, paired with the
+   actions' own auto margin, splits the leftover toolbar space into two equal
+   halves — so the cat stays centred midway between the search box and the
+   settings gear, and remains centred as the window is resized. */
 .cat-runner {
   flex: 0 0 auto;
-  margin-left: auto;
-  margin-right: 150px;              /* bias the cat left of centre */
+  margin-left: auto;                /* pairs with the actions' auto margin: the */
+  /* two even splits of the free space centre the cat between search and gear. */
   height: 40px;
   display: flex;
   align-items: center;
